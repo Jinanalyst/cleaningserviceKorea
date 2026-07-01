@@ -1,0 +1,23 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ring" x1="18" y1="18" x2="98" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#43d4ba"/>
+      <stop offset="0.45" stop-color="#2fbfa8"/>
+      <stop offset="1" stop-color="#2060d6"/>
+    </linearGradient>
+    <linearGradient id="hand" x1="30" y1="60" x2="96" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3b78e6"/>
+      <stop offset="1" stop-color="#164fb0"/>
+    </linearGradient>
+    <path id="spark" d="M0 -1 C0.17 -0.17 0.17 -0.17 1 0 C0.17 0.17 0.17 0.17 0 1 C-0.17 0.17 -0.17 0.17 -1 0 C-0.17 -0.17 -0.17 -0.17 0 -1 Z"/>
+  </defs>
+  <rect width="120" height="120" rx="26" fill="#ffffff"/>
+  <path fill-rule="evenodd" fill="url(#ring)"
+        d="M13 58 a47 47 0 1 0 94 0 a47 47 0 1 0 -94 0 Z
+           M26 67 a43 43 0 1 0 86 0 a43 43 0 1 0 -86 0 Z"/>
+  <use href="#spark" transform="translate(63 39) scale(12.5)" fill="#2060d6"/>
+  <use href="#spark" transform="translate(46 47) scale(7.5)" fill="#2fbfa8"/>
+  <use href="#spark" transform="translate(81 49) scale(6.5)" fill="#5b8ff0"/>
+  <path fill="url(#hand)"
+        d="M27 63 C33 84 51 93 69 89 C85 85 97 74 101 62 C91 68 79 70 66 69 C52 68 38 67 27 63 Z"/>
+</svg>

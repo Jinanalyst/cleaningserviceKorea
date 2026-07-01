@@ -19,12 +19,14 @@ export const metadata: Metadata = {
 function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2 group">
-      <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand text-white text-lg shadow-sm transition-transform group-hover:-rotate-6">
-        ✽
-      </span>
-      <span className="text-xl font-black tracking-tight text-ink">
-        손길
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo-mark.svg"
+        alt=""
+        aria-hidden="true"
+        className="h-9 w-9 transition-transform group-hover:-rotate-6"
+      />
+      <span className="text-xl font-black tracking-tight text-ink">손길</span>
     </Link>
   );
 }
@@ -65,6 +67,7 @@ function Footer() {
       <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
         <div className="space-y-3">
           <Logo />
+          <p className="text-sm font-bold text-mint">마음을 담은 깨끗함</p>
           <p className="max-w-xs text-sm leading-relaxed text-ink-soft">
             검증된 동네 청소 업체를 연결해 드리는 청소 중개 플랫폼이에요.
             사람의 손길이 닿는 깨끗함을 이어드릴게요.

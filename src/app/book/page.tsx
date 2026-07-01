@@ -647,7 +647,7 @@ export default function BookPage() {
                     </span>
                   </div>
                 </div>
-                <div className="mt-3 rounded-xl bg-apricot-soft/50 px-4 py-3 text-xs leading-relaxed text-ink-soft">
+                <div className="mt-3 rounded-xl bg-mint-soft/60 px-4 py-3 text-xs leading-relaxed text-ink-soft">
                   ⓘ 지금은 <b>목업(테스트) 결제</b>예요. 실제로 돈이 빠져나가지 않아요.
                   아래 버튼을 누르면 결제가 완료된 것처럼 예약이 확정됩니다.
                 </div>

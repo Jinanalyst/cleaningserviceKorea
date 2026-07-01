@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 /*
-  손길 — 따뜻하고 사람 냄새 나는 청소 중개 플랫폼
-  팔레트: 크림 배경 + 신뢰감 있는 세이지 그린 + 살구빛 코랄 포인트
+  손길 — 마음을 담은 깨끗함 (청소 중개 플랫폼)
+  팔레트: 부드러운 크림 배경 + 신뢰감 있는 블루 + 청록(민트) 포인트
+  (로고의 블루·민트 그라디언트와 맞춤)
 */
 
 @theme {
-  --color-cream: #fbf7f1;
-  --color-cream-deep: #f4ece0;
-  --color-ink: #33302b;
-  --color-ink-soft: #6f675c;
-  --color-line: #e9e0d3;
+  --color-cream: #fbfaf7;
+  --color-cream-deep: #eef1f6;
+  --color-ink: #24303f;
+  --color-ink-soft: #667283;
+  --color-line: #e2e7ef;
 
-  --color-brand-50: #eaf6f1;
-  --color-brand-100: #cbe9dd;
-  --color-brand-200: #9ed6c2;
-  --color-brand-400: #3fa886;
-  --color-brand: #1f8a70;
-  --color-brand-600: #17715c;
-  --color-brand-700: #115343;
+  --color-brand-50: #eef4fe;
+  --color-brand-100: #d8e6fc;
+  --color-brand-200: #b4cdf8;
+  --color-brand-400: #5b8ff0;
+  --color-brand: #2060d6;
+  --color-brand-600: #184fb4;
+  --color-brand-700: #123a86;
 
-  --color-apricot: #f4a259;
-  --color-apricot-soft: #fbe4cb;
-  --color-coral: #e2725b;
+  --color-mint: #2fbfa8;
+  --color-mint-soft: #d4f3ec;
 
   --font-sans: var(--font-noto), ui-sans-serif, system-ui, sans-serif;
 
@@ -37,8 +37,8 @@
 
 body {
   background:
-    radial-gradient(1200px 600px at 100% -5%, #fdeede 0%, transparent 55%),
-    radial-gradient(1000px 500px at -10% 5%, #e9f5ef 0%, transparent 50%),
+    radial-gradient(1200px 600px at 100% -5%, #e8f1fd 0%, transparent 55%),
+    radial-gradient(1000px 500px at -10% 5%, #e3f6f0 0%, transparent 50%),
     var(--color-cream);
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -62,7 +62,7 @@ body {
 
 /* 손그림 느낌의 밑줄 강조 */
 .hand-underline {
-  background-image: linear-gradient(transparent 60%, var(--color-apricot-soft) 60%);
+  background-image: linear-gradient(transparent 60%, var(--color-mint-soft) 60%);
   background-repeat: no-repeat;
 }
 

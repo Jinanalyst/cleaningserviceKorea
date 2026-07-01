@@ -44,7 +44,7 @@ export default function Home() {
 
           {/* Hero 카드 일러스트 */}
           <div className="relative animate-rise [animation-delay:120ms]">
-            <div className="absolute -left-6 -top-6 h-24 w-24 rounded-full bg-apricot-soft blur-2xl" />
+            <div className="absolute -left-6 -top-6 h-24 w-24 rounded-full bg-mint-soft blur-2xl" />
             <div className="absolute -bottom-8 -right-4 h-32 w-32 rounded-full bg-brand-100 blur-2xl" />
             <div className="relative rounded-[2rem] border border-line bg-white/90 p-6 shadow-xl backdrop-blur">
               <div className="flex items-center justify-between">
