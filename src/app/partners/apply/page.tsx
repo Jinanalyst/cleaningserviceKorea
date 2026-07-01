@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import {
   SERVICES,
   BANKS,
@@ -50,11 +51,31 @@ export default function PartnerApplyPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Application | null>(null);
 
-  // 현황 조회
-  const [showLookup, setShowLookup] = useState(false);
-  const [lookupQuery, setLookupQuery] = useState("");
-  const [lookupResult, setLookupResult] = useState<Application | null | "none">(null);
-  const [lookupLoading, setLookupLoading] = useState(false);
+  // 로그인 사용자의 내 신청 현황
+  const [authed, setAuthed] = useState<boolean | null>(null);
+  const [myApps, setMyApps] = useState<Application[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createSupabaseBrowser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setAuthed(false);
+        return;
+      }
+      setAuthed(true);
+      if (user.email) setEmail((prev) => prev || user.email!);
+      try {
+        const res = await fetch("/api/applications", { cache: "no-store" });
+        const data = await res.json();
+        setMyApps(data.applications ?? []);
+      } catch {
+        setMyApps([]);
+      }
+    })();
+  }, []);
 
   function toggleService(name: string) {
     setServices((prev) =>
@@ -96,20 +117,6 @@ export default function PartnerApplyPage() {
       setError(e instanceof Error ? e.message : "신청에 실패했어요.");
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  async function handleLookup() {
-    if (!lookupQuery.trim()) return;
-    setLookupLoading(true);
-    try {
-      const res = await fetch(`/api/applications?q=${encodeURIComponent(lookupQuery)}`);
-      const data = await res.json();
-      setLookupResult(data.applications?.[0] ?? "none");
-    } catch {
-      setLookupResult("none");
-    } finally {
-      setLookupLoading(false);
     }
   }
 
@@ -175,43 +182,33 @@ export default function PartnerApplyPage() {
         </div>
       </div>
 
-      {/* 현황 조회 토글 */}
-      <div className="mt-6 rounded-2xl border border-line bg-cream-deep/40 p-4">
-        <button
-          onClick={() => setShowLookup((v) => !v)}
-          className="flex w-full items-center justify-between text-sm font-bold text-ink"
-        >
-          <span>이미 신청하셨나요? 심사 현황 조회</span>
-          <span className="text-ink-soft">{showLookup ? "▲" : "▼"}</span>
-        </button>
-        {showLookup && (
-          <div className="mt-3">
-            <div className="flex gap-2">
-              <input
-                value={lookupQuery}
-                onChange={(e) => setLookupQuery(e.target.value)}
-                placeholder="신청번호(PT-...) 또는 사업자등록번호"
-                className="flex-1 rounded-full border border-line bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-100"
-              />
-              <button
-                onClick={handleLookup}
-                className="rounded-full bg-ink px-5 py-2.5 text-sm font-bold text-cream transition hover:opacity-90"
-              >
-                조회
-              </button>
-            </div>
-            {lookupLoading && <p className="mt-3 text-sm text-ink-soft">불러오는 중…</p>}
-            {lookupResult === "none" && (
-              <p className="mt-3 text-sm text-ink-soft">일치하는 신청이 없어요.</p>
-            )}
-            {lookupResult && lookupResult !== "none" && (
-              <div className="mt-4">
-                <ApplicationCard app={lookupResult} />
-              </div>
-            )}
+      {/* 내 신청 현황 (로그인 시 자동 표시) */}
+      {authed && myApps.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-lg font-black text-ink">내 신청 현황</h2>
+          <div className="space-y-4">
+            {myApps.map((a) => (
+              <ApplicationCard key={a.id} app={a} />
+            ))}
           </div>
-        )}
-      </div>
+          <p className="mt-4 text-sm text-ink-soft">
+            추가로 다른 업체를 등록하려면 아래 양식을 작성해 주세요.
+          </p>
+        </div>
+      )}
+      {authed === false && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4">
+          <p className="text-sm font-medium text-brand-700">
+            로그인하면 신청 현황을 안전하게 확인하고, 계정에 연결돼요.
+          </p>
+          <Link
+            href="/login?next=/partners/apply"
+            className="rounded-full bg-brand px-5 py-2 text-sm font-bold text-white transition hover:bg-brand-600"
+          >
+            로그인
+          </Link>
+        </div>
+      )}
 
       {/* 신청 폼 */}
       <div className="mt-8 space-y-8">

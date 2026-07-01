@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import {
   STATUS_META,
   STATUS_FLOW,
@@ -40,84 +40,77 @@ function formatDateKo(key: string) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
 }
 
-function Lookup() {
-  const params = useSearchParams();
-  const [query, setQuery] = useState("");
+function MyReservations() {
+  const [authed, setAuthed] = useState<boolean | null>(null);
   const [results, setResults] = useState<Reservation[] | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const search = useCallback(async (q: string) => {
-    if (!q.trim()) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/reservations?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      setResults(data.reservations ?? []);
-    } catch {
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // URL의 ?q= 값으로 자동 조회 (예약 완료 후 이동 시)
   useEffect(() => {
-    const q = params.get("q");
-    if (q) {
-      setQuery(q);
-      search(q);
-    }
-  }, [params, search]);
+    (async () => {
+      const supabase = createSupabaseBrowser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setAuthed(false);
+        return;
+      }
+      setAuthed(true);
+      try {
+        const res = await fetch("/api/reservations", { cache: "no-store" });
+        const data = await res.json();
+        setResults(data.reservations ?? []);
+      } catch {
+        setResults([]);
+      }
+    })();
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-12">
-      <h1 className="text-3xl font-black tracking-tight text-ink">예약 조회</h1>
+      <h1 className="text-3xl font-black tracking-tight text-ink">내 예약</h1>
       <p className="mt-1 text-ink-soft">
-        예약 번호 또는 연락처로 진행 상태를 확인하세요.
+        본인 계정으로 예약한 내역과 진행 상태를 확인하세요.
       </p>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          search(query);
-        }}
-        className="mt-6 flex gap-2"
-      >
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="예: SG-K7M2PQ 또는 010-2345-6789"
-          className="flex-1 rounded-full border border-line bg-white px-5 py-3 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-100"
-        />
-        <button
-          type="submit"
-          className="rounded-full bg-brand px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600"
-        >
-          조회
-        </button>
-      </form>
-
-      {loading && (
+      {authed === null && (
         <p className="mt-10 text-center text-ink-soft">불러오는 중…</p>
       )}
 
-      {!loading && results && results.length === 0 && (
+      {/* 비로그인 안내 */}
+      {authed === false && (
         <div className="mt-10 rounded-2xl border border-line bg-white p-8 text-center">
-          <p className="text-4xl">🔍</p>
-          <p className="mt-3 font-bold text-ink">일치하는 예약이 없어요</p>
+          <p className="text-4xl">🔒</p>
+          <p className="mt-3 font-bold text-ink">로그인이 필요해요</p>
+          <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+            개인정보 보호를 위해, 예약 내역은 본인 계정으로 로그인해야 볼 수 있어요.
+          </p>
+          <Link
+            href="/login?next=/reservations"
+            className="mt-5 inline-block rounded-full bg-brand px-6 py-2.5 text-sm font-bold text-white"
+          >
+            로그인하기
+          </Link>
+        </div>
+      )}
+
+      {/* 예약 없음 */}
+      {authed && results && results.length === 0 && (
+        <div className="mt-10 rounded-2xl border border-line bg-white p-8 text-center">
+          <p className="text-4xl">🧺</p>
+          <p className="mt-3 font-bold text-ink">아직 예약 내역이 없어요</p>
           <p className="mt-1 text-sm text-ink-soft">
-            예약 번호나 연락처를 다시 확인해 주세요.
+            로그인한 상태로 예약하면 여기에서 진행 상태를 확인할 수 있어요.
           </p>
           <Link
             href="/book"
             className="mt-5 inline-block rounded-full bg-brand px-6 py-2.5 text-sm font-bold text-white"
           >
-            새로 예약하기
+            청소 예약하기
           </Link>
         </div>
       )}
 
-      {!loading && results && results.length > 0 && (
+      {authed && results && results.length > 0 && (
         <div className="mt-8 space-y-6">
           {results.map((r) => (
             <ReservationCard key={r.id} r={r} />
@@ -225,11 +218,5 @@ function Info({ k, v }: { k: string; v: string }) {
 }
 
 export default function ReservationsPage() {
-  return (
-    <Suspense
-      fallback={<p className="py-20 text-center text-ink-soft">불러오는 중…</p>}
-    >
-      <Lookup />
-    </Suspense>
-  );
+  return <MyReservations />;
 }

@@ -1,7 +1,19 @@
 import Link from "next/link";
 import { PARTNERS, SERVICES, DEPOSIT, formatKRW } from "@/lib/data";
+import { readApprovedPartners } from "@/lib/applicationStore";
 
-export default function Home() {
+// 승인 파트너 목록이 주기적으로 갱신되도록 (최대 5분 캐시)
+export const revalidate = 300;
+
+export default async function Home() {
+  // 심사 승인된 신뢰 파트너 (공개 가능한 정보만)
+  let approved: Awaited<ReturnType<typeof readApprovedPartners>> = [];
+  try {
+    approved = await readApprovedPartners();
+  } catch {
+    approved = [];
+  }
+
   return (
     <div>
       {/* ── Hero ── */}
@@ -158,6 +170,44 @@ export default function Home() {
                   <span className="rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-ink-soft">
                     📍 {p.region}
                   </span>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* 심사 승인된 신규 파트너 (공개 정보만) */}
+          {approved.map((p) => (
+            <div
+              key={p.id}
+              className="flex gap-4 rounded-3xl border border-line bg-white p-6 shadow-sm transition hover:shadow-md"
+            >
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-brand-100 text-xl font-black text-brand-700">
+                {p.companyName.slice(0, 1)}
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg font-black text-ink">{p.companyName}</h3>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-600 ring-1 ring-emerald-200">
+                    ✓ 인증 완료
+                  </span>
+                </div>
+                {p.intro && (
+                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">{p.intro}</p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {p.services.map((sp) => (
+                    <span
+                      key={sp}
+                      className="rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-ink-soft"
+                    >
+                      {sp}
+                    </span>
+                  ))}
+                  {p.regions && (
+                    <span className="rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-ink-soft">
+                      📍 {p.regions}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

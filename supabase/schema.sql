@@ -126,3 +126,7 @@ create policy "profiles_update_own" on public.profiles
 -- 파트너 신청을 로그인 계정(업체)과 연결
 alter table public.partner_applications
   add column if not exists user_id uuid references auth.users(id);
+
+-- 예약을 로그인 계정(고객)과 연결 (본인 예약만 조회하도록)
+alter table public.reservations
+  add column if not exists user_id uuid references auth.users(id);

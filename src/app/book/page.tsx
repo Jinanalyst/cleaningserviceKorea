@@ -212,14 +212,14 @@ export default function BookPage() {
             <Row k="현장 잔금" v={formatKRW(Math.max(0, price - DEPOSIT))} />
           </div>
           <p className="mt-4 text-xs text-ink-soft">
-            예약 번호로 언제든 진행 상태를 확인할 수 있어요.
+            로그인한 계정의 &lsquo;내 예약&rsquo;에서 진행 상태를 확인할 수 있어요.
           </p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <Link
-              href={`/reservations?q=${confirmed.id}`}
+              href="/reservations"
               className="flex-1 rounded-full bg-brand px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600"
             >
-              예약 상태 보기
+              내 예약 보기
             </Link>
             <Link
               href="/"

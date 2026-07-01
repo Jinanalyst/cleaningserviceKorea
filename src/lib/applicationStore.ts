@@ -141,13 +141,39 @@ export async function updateApplication(
   return fromRow(data as Row);
 }
 
-export async function findApplication(query: string): Promise<Application[]> {
-  const q = query.trim().toUpperCase();
-  const bizDigits = query.replace(/\D/g, "");
-  const all = await readAllApplications();
-  return all.filter(
-    (a) =>
-      a.id.toUpperCase() === q ||
-      (bizDigits.length >= 5 && a.bizNumber.replace(/\D/g, "").includes(bizDigits))
-  );
+// 특정 로그인 계정이 낸 신청만 조회 (개인정보 보호)
+export async function readApplicationsByUser(userId: string): Promise<Application[]> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data as Row[]).map(fromRow);
+}
+
+// 승인된(신뢰) 파트너의 "공개 가능한" 정보만 반환.
+// 연락처·이메일·계좌·사업자번호 등 민감정보는 절대 포함하지 않는다.
+export type PublicPartner = {
+  id: string;
+  companyName: string;
+  services: string[];
+  regions: string;
+  intro: string;
+};
+
+export async function readApprovedPartners(): Promise<PublicPartner[]> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("id, company_name, services, regions, intro")
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    companyName: r.company_name as string,
+    services: (r.services as string[]) ?? [],
+    regions: (r.regions as string) ?? "",
+    intro: (r.intro as string) ?? "",
+  }));
 }

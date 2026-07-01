@@ -2,22 +2,27 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   createApplication,
   readAllApplications,
-  findApplication,
+  readApplicationsByUser,
 } from "@/lib/applicationStore";
 import { SERVICES } from "@/lib/data";
-import { createSupabaseServer } from "@/lib/supabase-server";
+import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 
 const SERVICE_NAMES = SERVICES.map((s) => s.name);
 
-// GET /api/applications         → 전체 목록 (운영자 심사용)
-// GET /api/applications?q=...    → 신청코드/사업자번호로 조회 (신청자용)
-export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get("q");
-  if (q && q.trim()) {
-    const rows = await findApplication(q);
+// GET /api/applications
+//  - 관리자: 전체 신청 (심사용)
+//  - 로그인 사용자: 본인 신청만
+//  - 비로그인: 401
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
+  }
+  if (isAdminEmail(user.email)) {
+    const rows = await readAllApplications();
     return NextResponse.json({ applications: rows });
   }
-  const rows = await readAllApplications();
+  const rows = await readApplicationsByUser(user.id);
   return NextResponse.json({ applications: rows });
 }
 
@@ -67,16 +72,8 @@ export async function POST(request: NextRequest) {
   }
 
   // 로그인한 업체 계정이면 신청을 해당 계정과 연결
-  let userId: string | null = null;
-  try {
-    const authed = await createSupabaseServer();
-    const {
-      data: { user },
-    } = await authed.auth.getUser();
-    userId = user?.id ?? null;
-  } catch {
-    userId = null;
-  }
+  const user = await getCurrentUser();
+  const userId = user?.id ?? null;
 
   const application = await createApplication({
     companyName,

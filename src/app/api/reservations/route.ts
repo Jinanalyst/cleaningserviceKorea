@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createReservation, readAll, findByPhoneOrCode } from "@/lib/store";
+import { createReservation, readAll, readByUser } from "@/lib/store";
+import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 import {
   DEPOSIT,
   estimatePrice,
@@ -40,14 +41,20 @@ function sanitizeProperty(
 }
 
 // GET /api/reservations           → 전체 목록 (운영자용)
-// GET /api/reservations?q=010...  → 전화번호/예약코드로 조회 (고객용)
-export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get("q");
-  if (q && q.trim()) {
-    const rows = await findByPhoneOrCode(q);
+// GET /api/reservations
+//  - 관리자: 전체 예약
+//  - 로그인 사용자: 본인 예약만
+//  - 비로그인: 401
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
+  }
+  if (isAdminEmail(user.email)) {
+    const rows = await readAll();
     return NextResponse.json({ reservations: rows });
   }
-  const rows = await readAll();
+  const rows = await readByUser(user.id);
   return NextResponse.json({ reservations: rows });
 }
 
@@ -109,6 +116,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
 
+  // 로그인 상태면 예약을 계정과 연결 (본인 예약 조회용)
+  const user = await getCurrentUser();
+
   const price = estimatePrice(serviceId, py);
   const reservation = await createReservation({
     partnerId,
@@ -124,6 +134,7 @@ export async function POST(request: NextRequest) {
     property,
     price,
     deposit: DEPOSIT,
+    userId: user?.id ?? null,
   });
 
   return NextResponse.json({ reservation }, { status: 201 });

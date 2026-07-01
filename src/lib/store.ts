@@ -24,6 +24,7 @@ export type Reservation = {
   deposit: number; // 선결제 예약금
   paymentStatus: "paid"; // 목업: 항상 결제 완료로 생성
   status: ReservationStatus;
+  userId: string | null; // 예약한 로그인 계정 (비로그인 예약은 null)
 };
 
 // DB 행(snake_case) → Reservation(camelCase)
@@ -45,6 +46,7 @@ type Row = {
   deposit: number;
   payment_status: string;
   status: ReservationStatus;
+  user_id: string | null;
 };
 
 function fromRow(r: Row): Reservation {
@@ -66,6 +68,7 @@ function fromRow(r: Row): Reservation {
     deposit: r.deposit,
     paymentStatus: "paid",
     status: r.status,
+    userId: r.user_id ?? null,
   };
 }
 
@@ -112,6 +115,7 @@ export async function createReservation(
         deposit: input.deposit,
         payment_status: "paid",
         status: "pending",
+        user_id: input.userId,
       })
       .select("*")
       .single();
@@ -138,13 +142,13 @@ export async function updateStatus(
   return fromRow(data as Row);
 }
 
-export async function findByPhoneOrCode(query: string): Promise<Reservation[]> {
-  const q = query.trim().toUpperCase();
-  const digits = query.replace(/\D/g, "");
-  const all = await readAll();
-  return all.filter(
-    (r) =>
-      r.id.toUpperCase() === q ||
-      (digits.length >= 4 && r.phone.replace(/\D/g, "").includes(digits))
-  );
+// 특정 로그인 계정의 예약만 조회 (개인정보 보호)
+export async function readByUser(userId: string): Promise<Reservation[]> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data as Row[]).map(fromRow);
 }
