@@ -51,6 +51,68 @@ export const STATUS_FLOW: ReservationStatus[] = [
   "completed",
 ];
 
+// ── 파트너 등록 신청(마켓플레이스 심사) ──
+export type ApplicationStatus =
+  | "submitted" // 접수 완료
+  | "reviewing" // 서류 심사 중
+  | "approved" // 승인 완료
+  | "rejected"; // 반려
+
+export const APPLICATION_STATUS_META: Record<
+  ApplicationStatus,
+  { label: string; tone: string; dot: string; desc: string }
+> = {
+  submitted: {
+    label: "접수 완료",
+    tone: "bg-amber-50 text-amber-700 ring-amber-200",
+    dot: "bg-amber-400",
+    desc: "신청이 정상 접수됐어요. 곧 서류 심사를 시작할게요.",
+  },
+  reviewing: {
+    label: "서류 심사 중",
+    tone: "bg-sky-50 text-sky-700 ring-sky-200",
+    dot: "bg-sky-400",
+    desc: "제출하신 사업자 정보와 정산 계좌를 확인하고 있어요.",
+  },
+  approved: {
+    label: "승인 완료",
+    tone: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    dot: "bg-emerald-400",
+    desc: "축하해요! 손길 파트너로 승인됐어요. 담당자가 곧 연락드릴게요.",
+  },
+  rejected: {
+    label: "반려",
+    tone: "bg-rose-50 text-rose-700 ring-rose-200",
+    dot: "bg-rose-400",
+    desc: "아쉽게도 이번 심사는 통과하지 못했어요. 사유를 확인해 주세요.",
+  },
+};
+
+// 진행 트래커 순서 (반려는 별도)
+export const APPLICATION_FLOW: ApplicationStatus[] = [
+  "submitted",
+  "reviewing",
+  "approved",
+];
+
+// 정산 계좌 은행 목록
+export const BANKS = [
+  "국민은행",
+  "신한은행",
+  "우리은행",
+  "하나은행",
+  "농협은행",
+  "기업은행",
+  "카카오뱅크",
+  "토스뱅크",
+  "새마을금고",
+  "우체국",
+  "SC제일은행",
+  "케이뱅크",
+  "부산은행",
+  "대구은행",
+];
+
 // 서비스 성격 — 입력받을 정보(집 정보 / 회사 정보 / 부분청소 대상)를 결정한다.
 export type ServiceCategory = "residential" | "commercial" | "partial";
 

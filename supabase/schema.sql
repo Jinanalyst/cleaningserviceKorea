@@ -49,3 +49,48 @@ values
    '{"propertyType":"원룸","rooms":"원룸","bathrooms":"1개","hasPet":false,"floorInfo":"5층, 엘리베이터 있음"}'::jsonb,
    60000, 30000, 'paid', 'completed')
 on conflict (id) do nothing;
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 파트너 등록 신청 테이블 (마켓플레이스 심사)
+-- ══════════════════════════════════════════════════════════════
+create table if not exists public.partner_applications (
+  id             text primary key,                    -- 신청 코드 (예: PT-8F3K2A)
+  created_at     timestamptz not null default now(),
+  company_name   text not null,
+  owner_name     text not null,
+  biz_number     text not null,                       -- 사업자등록번호
+  phone          text not null,
+  email          text not null,
+  bank_name      text not null,                       -- 정산 은행
+  account_number text not null,                       -- 계좌번호
+  account_holder text not null,                       -- 예금주
+  regions        text default '',                     -- 서비스 가능 지역
+  services       jsonb default '[]'::jsonb,           -- 전문 청소 분야
+  experience     text default '',
+  team_size      text default '',
+  intro          text default '',
+  status         text not null default 'submitted',   -- submitted/reviewing/approved/rejected
+  review_note    text default ''                      -- 심사 메모/사유
+);
+
+create index if not exists applications_status_idx on public.partner_applications (status);
+create index if not exists applications_biz_idx on public.partner_applications (biz_number);
+create index if not exists applications_created_idx on public.partner_applications (created_at desc);
+
+alter table public.partner_applications enable row level security;
+
+-- ── 데모 신청 (원하지 않으면 아래 블록은 지워도 됩니다) ──
+insert into public.partner_applications
+  (id, created_at, company_name, owner_name, biz_number, phone, email,
+   bank_name, account_number, account_holder, regions, services, experience, team_size, intro, status, review_note)
+values
+  ('PT-9WQ2MK', '2026-06-30T01:00:00Z', '싹싹클린', '정우성', '221-88-01234',
+   '010-3333-2211', 'ssak@example.com', '국민은행', '12345601234567', '정우성',
+   '서울 강서·양천', '["가정 정기청소","입주청소"]'::jsonb, '4년', '5명',
+   '아파트 입주청소 위주로 활동해온 5인 팀입니다.', 'reviewing', ''),
+  ('PT-5HTN3B', '2026-06-27T06:30:00Z', '반짝반짝세상', '한지민', '134-52-77120',
+   '010-7788-9900', 'twinkle@example.com', '신한은행', '110222333444', '한지민',
+   '경기 남부', '["사무실·상가청소"]'::jsonb, '7년', '12명',
+   '상가·사무실 정기관리 전문 업체입니다. 세금계산서 발행 가능.', 'approved', '서류 확인 완료, 승인 처리했습니다.')
+on conflict (id) do nothing;

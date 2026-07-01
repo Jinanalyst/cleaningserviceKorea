@@ -50,12 +50,20 @@ function Header() {
             예약 조회
           </Link>
         </nav>
-        <Link
-          href="/book"
-          className="rounded-full bg-ink px-5 py-2 text-sm font-bold text-cream transition-transform hover:scale-105 active:scale-95"
-        >
-          예약하기
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/partners/apply"
+            className="rounded-full px-3 py-2 text-sm font-bold text-brand ring-1 ring-brand-200 transition hover:bg-brand-50 sm:px-4"
+          >
+            파트너 등록
+          </Link>
+          <Link
+            href="/book"
+            className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-cream transition-transform hover:scale-105 active:scale-95 sm:px-5"
+          >
+            예약하기
+          </Link>
+        </div>
       </div>
     </header>
   );
@@ -81,6 +89,9 @@ function Footer() {
             </li>
             <li>
               <Link href="/reservations" className="hover:text-brand">내 예약 조회</Link>
+            </li>
+            <li>
+              <Link href="/partners/apply" className="hover:text-brand">파트너 등록하기</Link>
             </li>
             <li>
               <Link href="/admin" className="hover:text-brand">파트너·운영 대시보드</Link>

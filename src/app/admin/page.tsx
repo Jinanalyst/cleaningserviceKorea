@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   STATUS_META,
   partnerById,
@@ -112,6 +113,19 @@ export default function AdminPage() {
         >
           ↻ 새로고침
         </button>
+      </div>
+
+      {/* 탭 네비게이션 */}
+      <div className="mt-4 flex gap-2">
+        <span className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-cream">
+          예약 관리
+        </span>
+        <Link
+          href="/admin/partners"
+          className="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink-soft ring-1 ring-line transition hover:bg-cream-deep"
+        >
+          파트너 심사
+        </Link>
       </div>
 
       {/* 통계 */}
