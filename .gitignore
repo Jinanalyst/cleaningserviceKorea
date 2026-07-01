@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# 런타임 예약 데이터 (파일 기반 목업 저장소)
+/data
+
+# 로컬 프리뷰 설정
+/.claude
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
