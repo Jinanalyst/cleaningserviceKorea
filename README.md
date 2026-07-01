@@ -27,6 +27,17 @@
   잔금은 청소 완료 후 현장 결제.
 - **예약 상태 표시**: 고객용 진행 트래커 + 운영자용 대시보드.
 
+## 데이터베이스 (Supabase)
+
+예약 데이터는 **Supabase(Postgres)** 에 저장됩니다.
+
+1. Supabase 대시보드 → **SQL Editor** 에서 [`supabase/schema.sql`](supabase/schema.sql) 실행 (테이블 + 데모 데이터 생성)
+2. 환경변수 설정 ([`.env.example`](.env.example) 참고):
+   - 로컬: `.env.local` 에 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+   - Vercel: Project → Settings → Environment Variables 에 동일하게 추가
+3. `service_role` 키는 **서버 전용**입니다. 브라우저에 노출되지 않으며(`src/lib/store.ts`
+   는 server-only), 테이블 RLS는 활성화되어 있어 anon 접근이 차단됩니다.
+
 ## ⚠️ 결제는 목업(테스트)입니다
 
 `/book` 마지막 단계의 결제 버튼은 실제 결제가 아니라 **결제 완료를 시뮬레이션**
@@ -45,9 +56,7 @@ npm run dev        # http://localhost:3000
 ## 기술 스택 / 구조
 
 - **Next.js 16** (App Router) · **React 19** · **TypeScript** · **Tailwind CSS v4**
-- 데이터 저장: 목업 단계에서는 `data/reservations.json` **파일 기반 저장소**
-  (`src/lib/store.ts`). 실서비스 전환 시 이 파일을 DB(PostgreSQL/Prisma 등)로
-  교체하면 됩니다.
+- 데이터 저장: **Supabase(Postgres)** — `src/lib/store.ts` + `src/lib/supabase.ts`.
 
 ```
 src/
@@ -60,7 +69,9 @@ src/
     api/reservations/[id]/route.ts  # 상태 변경(PATCH)
   components/Calendar.tsx         # 예약 캘린더
   lib/data.ts                     # 파트너·서비스·상태 정의, 견적 계산
-  lib/store.ts                    # 파일 기반 예약 저장소(서버 전용)
+  lib/store.ts                    # 예약 저장소 (Supabase, 서버 전용)
+  lib/supabase.ts                 # Supabase 서버 클라이언트
+supabase/schema.sql               # 테이블 스키마 + 데모 데이터
 ```
 
 ## 다음 단계 아이디어
