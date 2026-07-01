@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { PARTNERS, SERVICES, DEPOSIT, formatKRW } from "@/lib/data";
+import { PARTNERS, SERVICES, DEPOSIT, formatKRW, reviewsFor } from "@/lib/data";
 import { readApprovedPartners } from "@/lib/applicationStore";
+import PartnerCard from "@/components/PartnerCard";
 
 // 승인 파트너 목록이 주기적으로 갱신되도록 (최대 5분 캐시)
 export const revalidate = 300;
@@ -141,38 +142,7 @@ export default async function Home() {
         />
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           {PARTNERS.map((p) => (
-            <div
-              key={p.id}
-              className="flex gap-4 rounded-3xl border border-line bg-white p-6 shadow-sm transition hover:shadow-md"
-            >
-              <div
-                className={`grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-xl font-black ${p.accent}`}
-              >
-                {p.name.slice(0, 1)}
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-black text-ink">{p.name}</h3>
-                  <span className="text-sm font-bold text-amber-500">★ {p.rating}</span>
-                  <span className="text-xs text-ink-soft">후기 {p.reviews}</span>
-                </div>
-                <p className="mt-0.5 text-sm font-medium text-brand-600">{p.tagline}</p>
-                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{p.intro}</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {p.specialties.map((sp) => (
-                    <span
-                      key={sp}
-                      className="rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-ink-soft"
-                    >
-                      {sp}
-                    </span>
-                  ))}
-                  <span className="rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-ink-soft">
-                    📍 {p.region}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <PartnerCard key={p.id} partner={p} reviews={reviewsFor(p.id)} />
           ))}
 
           {/* 심사 승인된 신규 파트너 (공개 정보만) */}
