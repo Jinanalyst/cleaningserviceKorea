@@ -94,3 +94,35 @@ values
    '경기 남부', '["사무실·상가청소"]'::jsonb, '7년', '12명',
    '상가·사무실 정기관리 전문 업체입니다. 세금계산서 발행 가능.', 'approved', '서류 확인 완료, 승인 처리했습니다.')
 on conflict (id) do nothing;
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 구글 로그인 사용자 프로필 (온보딩: 고객 / 업체)
+-- ══════════════════════════════════════════════════════════════
+create table if not exists public.profiles (
+  id          uuid primary key references auth.users(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  role        text,                                   -- 'customer' | 'business'
+  name        text,
+  email       text,
+  onboarded   boolean not null default false
+);
+
+alter table public.profiles enable row level security;
+
+-- 본인 프로필만 읽고/쓰기 가능
+drop policy if exists "profiles_select_own" on public.profiles;
+create policy "profiles_select_own" on public.profiles
+  for select using (auth.uid() = id);
+
+drop policy if exists "profiles_insert_own" on public.profiles;
+create policy "profiles_insert_own" on public.profiles
+  for insert with check (auth.uid() = id);
+
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own" on public.profiles
+  for update using (auth.uid() = id);
+
+-- 파트너 신청을 로그인 계정(업체)과 연결
+alter table public.partner_applications
+  add column if not exists user_id uuid references auth.users(id);

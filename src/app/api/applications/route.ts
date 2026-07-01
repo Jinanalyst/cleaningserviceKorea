@@ -5,6 +5,7 @@ import {
   findApplication,
 } from "@/lib/applicationStore";
 import { SERVICES } from "@/lib/data";
+import { createSupabaseServer } from "@/lib/supabase-server";
 
 const SERVICE_NAMES = SERVICES.map((s) => s.name);
 
@@ -65,6 +66,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
 
+  // 로그인한 업체 계정이면 신청을 해당 계정과 연결
+  let userId: string | null = null;
+  try {
+    const authed = await createSupabaseServer();
+    const {
+      data: { user },
+    } = await authed.auth.getUser();
+    userId = user?.id ?? null;
+  } catch {
+    userId = null;
+  }
+
   const application = await createApplication({
     companyName,
     ownerName,
@@ -79,6 +92,7 @@ export async function POST(request: NextRequest) {
     experience,
     teamSize,
     intro,
+    userId,
   });
 
   return NextResponse.json({ application }, { status: 201 });

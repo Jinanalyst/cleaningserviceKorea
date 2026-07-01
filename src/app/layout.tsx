@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Link from "next/link";
+import AuthButtons from "@/components/AuthButtons";
 import "./globals.css";
 
 const noto = Noto_Sans_KR({
@@ -49,14 +50,12 @@ function Header() {
           <Link href="/reservations" className="hover:text-ink transition-colors">
             예약 조회
           </Link>
-        </nav>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/partners/apply"
-            className="rounded-full px-3 py-2 text-sm font-bold text-brand ring-1 ring-brand-200 transition hover:bg-brand-50 sm:px-4"
-          >
+          <Link href="/partners/apply" className="font-bold text-brand hover:text-brand-600 transition-colors">
             파트너 등록
           </Link>
+        </nav>
+        <div className="flex items-center gap-3">
+          <AuthButtons />
           <Link
             href="/book"
             className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-cream transition-transform hover:scale-105 active:scale-95 sm:px-5"

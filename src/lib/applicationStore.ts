@@ -23,6 +23,7 @@ export type Application = {
   intro: string; // 업체 소개
   status: ApplicationStatus;
   reviewNote: string; // 심사 메모/사유
+  userId: string | null; // 연결된 로그인 계정 (구글 로그인 업체)
 };
 
 type Row = {
@@ -43,6 +44,7 @@ type Row = {
   intro: string | null;
   status: ApplicationStatus;
   review_note: string | null;
+  user_id: string | null;
 };
 
 function fromRow(r: Row): Application {
@@ -64,6 +66,7 @@ function fromRow(r: Row): Application {
     intro: r.intro ?? "",
     status: r.status,
     reviewNote: r.review_note ?? "",
+    userId: r.user_id ?? null,
   };
 }
 
@@ -108,6 +111,7 @@ export async function createApplication(
         intro: input.intro,
         status: "submitted",
         review_note: "",
+        user_id: input.userId,
       })
       .select("*")
       .single();
