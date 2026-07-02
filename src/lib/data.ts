@@ -172,7 +172,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "이사 나가는 날, 짐 뺀 자리까지 원상복구로 마무리해요.",
     category: "residential",
     pricePerPyeong: 8000,
-    minPrice: 120000,
+    minPrice: 150000,
     duration: "4~6시간",
   },
   {
@@ -182,7 +182,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "보증금 걱정 없이 깔끔하게. 원룸·소형 평수 퇴실 청소.",
     category: "residential",
     pricePerPyeong: 6000,
-    minPrice: 90000,
+    minPrice: 120000,
     duration: "2~3시간",
   },
   {
@@ -192,7 +192,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "주거·업무 겸용 공간에 맞춘 꼼꼼한 청소.",
     category: "residential",
     pricePerPyeong: 7000,
-    minPrice: 100000,
+    minPrice: 130000,
     duration: "3~4시간",
   },
   {
@@ -202,7 +202,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "영업 전후 시간대에 맞춰 사업장을 깔끔하게 관리해요.",
     category: "commercial",
     pricePerPyeong: 5000,
-    minPrice: 100000,
+    minPrice: 150000,
     duration: "3~5시간",
   },
   {
@@ -212,7 +212,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "주방·화장실·베란다 등 필요한 곳만 골라서 청소해요.",
     category: "partial",
     pricePerPyeong: 4000,
-    minPrice: 40000,
+    minPrice: 70000,
     duration: "1~2시간",
   },
 ];
