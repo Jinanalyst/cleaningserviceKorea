@@ -114,6 +114,16 @@ export default async function Home() {
             </div>
           ))}
         </div>
+
+        {/* 가격 안내 */}
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-line bg-cream-deep/40 px-5 py-4 text-sm leading-relaxed text-ink-soft">
+          <span className="text-base">ⓘ</span>
+          <p>
+            표시된 <b className="text-ink">시작 가격은 1인 작업 기준</b>이에요. 평수, 오염도,
+            작업 범위에 따라 추가 인력 또는 추가 시간이 발생할 수 있으며, 최종 금액은
+            방문·상담 후 확정됩니다.
+          </p>
+        </div>
       </section>
 
       {/* ── How it works ── */}

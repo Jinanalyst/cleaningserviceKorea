@@ -334,6 +334,10 @@ export default function BookPage() {
                     </button>
                   ))}
                 </div>
+                <p className="mt-3 text-xs leading-relaxed text-ink-soft">
+                  ⓘ 1인 작업 기준 예상가예요. 오염도·작업 범위에 따라 추가 인력/시간이
+                  붙을 수 있고, 최종 금액은 방문·상담 후 확정됩니다.
+                </p>
               </Field>
 
               {svc && (
@@ -646,6 +650,11 @@ export default function BookPage() {
                       {formatKRW(Math.max(0, price - DEPOSIT))}
                     </span>
                   </div>
+                  <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-ink-soft">
+                    ⓘ 이 금액은 <b>1인 작업 기준 예상가</b>예요. 평수·오염도·작업 범위에 따라
+                    추가 인력 또는 추가 시간이 발생할 수 있으며, 최종 금액은 방문·상담 후
+                    확정됩니다.
+                  </p>
                 </div>
                 <div className="mt-3 rounded-xl bg-mint-soft/60 px-4 py-3 text-xs leading-relaxed text-ink-soft">
                   ⓘ 지금은 <b>목업(테스트) 결제</b>예요. 실제로 돈이 빠져나가지 않아요.
