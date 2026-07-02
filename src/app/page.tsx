@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PARTNERS, SERVICES, DEPOSIT, formatKRW, reviewsFor } from "@/lib/data";
 import { readApprovedPartners } from "@/lib/applicationStore";
 import PartnerCard from "@/components/PartnerCard";
+import LiveBookings from "@/components/LiveBookings";
 
 // 승인 파트너 목록이 주기적으로 갱신되도록 (최대 5분 캐시)
 export const revalidate = 300;
@@ -62,15 +63,15 @@ export default async function Home() {
             <div className="relative rounded-[2rem] border border-line bg-white/90 p-6 shadow-xl backdrop-blur">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-ink-soft">이번 주 예약 현황</p>
-                <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-600">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-600">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand" />
+                  </span>
                   실시간
                 </span>
               </div>
-              <div className="mt-4 space-y-3">
-                <MiniBooking emoji="🏠" title="가정 정기청소" who="반짝살림" time="수 13:00" />
-                <MiniBooking emoji="📦" title="입주청소" who="깔끔한하루" time="금 09:00" />
-                <MiniBooking emoji="🔑" title="원룸 퇴거청소" who="손끝청소" time="토 11:00" />
-              </div>
+              <LiveBookings />
               <div className="mt-5 rounded-2xl bg-cream p-4">
                 <p className="text-xs text-ink-soft">지금 예약하면</p>
                 <p className="mt-0.5 text-lg font-black text-ink">
@@ -225,33 +226,6 @@ function Stat({ n, label }: { n: string; label: string }) {
     <div>
       <p className="text-2xl font-black text-ink">{n}</p>
       <p className="text-xs text-ink-soft">{label}</p>
-    </div>
-  );
-}
-
-function MiniBooking({
-  emoji,
-  title,
-  who,
-  time,
-}: {
-  emoji: string;
-  title: string;
-  who: string;
-  time: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-line px-3 py-2.5">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-cream text-lg">
-        {emoji}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-ink">{title}</p>
-        <p className="text-xs text-ink-soft">{who}</p>
-      </div>
-      <span className="rounded-lg bg-brand-50 px-2 py-1 text-xs font-bold text-brand-600">
-        {time}
-      </span>
     </div>
   );
 }

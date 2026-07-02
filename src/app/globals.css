@@ -70,3 +70,38 @@ body {
   background: var(--color-brand-100);
   color: var(--color-brand-700);
 }
+
+/* 실시간 예약 현황 — 새 항목이 위에서 들어오고 아래로 밀려나는 회전 효과 */
+@keyframes slotIn {
+  from {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    max-height: 4.5rem;
+    opacity: 1;
+    margin-bottom: 0.75rem;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes slotOut {
+  from {
+    max-height: 4.5rem;
+    opacity: 1;
+    margin-bottom: 0.75rem;
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    transform: translateY(6px);
+  }
+}
+.slot-in {
+  animation: slotIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.slot-out {
+  animation: slotOut 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
