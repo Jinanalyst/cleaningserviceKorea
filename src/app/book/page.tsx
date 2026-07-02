@@ -65,6 +65,10 @@ export default function BookPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ id: string } | null>(null);
 
+  // 결제 수단
+  const [payMethod, setPayMethod] = useState<"transfer" | "card">("transfer");
+  const [copied, setCopied] = useState(false);
+
   // 결제 전 필수 동의 (PG 심사 요건)
   const [agreeDeposit, setAgreeDeposit] = useState(false);
   const [agreeTotal, setAgreeTotal] = useState(false);
@@ -708,6 +712,97 @@ export default function BookPage() {
                 </div>
               </Field>
 
+              {/* 결제 수단 선택 */}
+              <Field title="결제 수단">
+                <div className="space-y-2">
+                  {/* 무통장 입금 (토스뱅크) */}
+                  <label
+                    className={`block cursor-pointer rounded-2xl border-2 p-4 transition ${
+                      payMethod === "transfer"
+                        ? "border-brand bg-brand-50"
+                        : "border-line bg-white hover:border-brand-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        value="transfer"
+                        checked={payMethod === "transfer"}
+                        onChange={() => setPayMethod("transfer")}
+                        className="h-4 w-4 accent-brand"
+                      />
+                      <span className="font-bold text-ink">무통장 입금 (계좌이체)</span>
+                      <span className="ml-auto rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-700">
+                        토스뱅크
+                      </span>
+                    </div>
+                    {payMethod === "transfer" && (
+                      <div className="mt-3 rounded-xl border border-line bg-white p-4">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-sm text-ink-soft">예금주</span>
+                          <span className="font-bold text-ink">체인랩스</span>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <div>
+                            <span className="text-sm text-ink-soft">토스뱅크 </span>
+                            <span className="text-lg font-black tracking-tight text-ink">
+                              100261986907
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard
+                                ?.writeText("100261986907")
+                                .then(() => {
+                                  setCopied(true);
+                                  setTimeout(() => setCopied(false), 1500);
+                                })
+                                .catch(() => {});
+                            }}
+                            className="shrink-0 rounded-full border border-brand px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-50"
+                          >
+                            {copied ? "복사됨 ✓" : "계좌 복사"}
+                          </button>
+                        </div>
+                        <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-ink-soft">
+                          위 계좌로 예약금 <b>{formatKRW(DEPOSIT)}</b>을 입금해 주세요.
+                          입금자명은 예약자 성함({customerName || "예약자명"})으로 부탁드립니다.
+                          입금이 확인되면 예약이 확정됩니다.
+                        </p>
+                      </div>
+                    )}
+                  </label>
+
+                  {/* 카드 · 간편결제 */}
+                  <label
+                    className={`block cursor-pointer rounded-2xl border-2 p-4 transition ${
+                      payMethod === "card"
+                        ? "border-brand bg-brand-50"
+                        : "border-line bg-white hover:border-brand-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        value="card"
+                        checked={payMethod === "card"}
+                        onChange={() => setPayMethod("card")}
+                        className="h-4 w-4 accent-brand"
+                      />
+                      <span className="font-bold text-ink">카드 · 간편결제</span>
+                    </div>
+                    {payMethod === "card" && (
+                      <p className="mt-3 rounded-xl border border-line bg-white p-4 text-xs leading-relaxed text-ink-soft">
+                        결제하기를 누르면 결제창이 열립니다.
+                      </p>
+                    )}
+                  </label>
+                </div>
+              </Field>
+
               {/* 결제 전 필수 동의 */}
               <Field title="결제 전 확인 사항">
                 <div className="space-y-2">
@@ -762,7 +857,9 @@ export default function BookPage() {
               >
                 {paying
                   ? "결제 진행 중…"
-                  : `예약금 ${formatKRW(DEPOSIT)} 결제하고 예약하기`}
+                  : payMethod === "transfer"
+                    ? `예약금 ${formatKRW(DEPOSIT)} 입금하고 예약하기`
+                    : `예약금 ${formatKRW(DEPOSIT)} 결제하고 예약하기`}
               </button>
               {!allAgreed && (
                 <p className="-mt-2 text-center text-xs text-ink-soft">
