@@ -1,43 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  COMPANY,
-  PARTNERS,
-  partnerById,
-  reviewsFor,
-  serviceById,
-  type Review,
-} from "@/lib/data";
-import { listReviewsByPartner } from "@/lib/reviewStore";
+import { COMPANY, PARTNERS, partnerById } from "@/lib/data";
+import { getPartnerReviews } from "@/lib/partnerReviews";
 import { Stars, VerifyBadges, WorkPhoto } from "@/components/PartnerBits";
+import PartnerReviews from "@/components/PartnerReviews";
 
-// 새 후기가 반영되도록 최대 60초 캐시
+// 새 후기가 반영되도록 최대 60초 캐시 (초기 렌더용, 이후 클라이언트가 라이브로 갱신)
 export const revalidate = 60;
 
 // 알려진 파트너는 정적 생성
 export function generateStaticParams() {
   return PARTNERS.map((p) => ({ id: p.id }));
-}
-
-// 고객이 작성한 DB 후기를 화면 표시용 형태로 변환
-async function loadReviews(partnerId: string): Promise<Review[]> {
-  const seed = reviewsFor(partnerId);
-  let submitted: Review[] = [];
-  try {
-    const rows = await listReviewsByPartner(partnerId);
-    submitted = rows.map((r) => ({
-      author: r.authorName,
-      rating: r.rating,
-      date: r.createdAt.slice(0, 10).replace(/-/g, "."),
-      service: serviceById(r.serviceId)?.name ?? "청소 서비스",
-      text: r.body,
-    }));
-  } catch {
-    submitted = [];
-  }
-  // 고객이 남긴 최신 후기를 먼저 보여준다
-  return [...submitted, ...seed];
 }
 
 export async function generateMetadata({
@@ -63,7 +37,7 @@ export default async function PartnerDetailPage({
   const partner = partnerById(id);
   if (!partner) notFound();
 
-  const reviews = await loadReviews(partner.id);
+  const reviews = await getPartnerReviews(partner.id);
   const telHref = `tel:${COMPANY.tel.replace(/[^0-9]/g, "")}`;
 
   return (
@@ -153,38 +127,8 @@ export default async function PartnerDetailPage({
         </div>
       </section>
 
-      {/* 후기 */}
-      <section className="mt-8">
-        <h2 className="text-lg font-black text-ink">
-          고객 후기 <span className="text-ink-soft">({reviews.length})</span>
-        </h2>
-        <div className="mt-3 space-y-3">
-          {reviews.length === 0 ? (
-            <p className="rounded-2xl border border-line bg-white p-6 text-center text-sm text-ink-soft">
-              아직 등록된 후기가 없어요.
-            </p>
-          ) : (
-            reviews.map((r, i) => (
-              <div
-                key={i}
-                className="rounded-2xl border border-line bg-white p-5 shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-ink">{r.author}</span>
-                  <span className="text-xs text-ink-soft">{r.date}</span>
-                </div>
-                <div className="mt-1 flex items-center gap-2 text-sm">
-                  <Stars rating={r.rating} />
-                  <span className="rounded-full bg-cream px-2 py-0.5 text-xs font-medium text-ink-soft ring-1 ring-line">
-                    {r.service}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-ink">{r.text}</p>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
+      {/* 후기 — 스크롤 가능 + 라이브 갱신 */}
+      <PartnerReviews partnerId={partner.id} initialReviews={reviews} />
 
       {/* 안내 */}
       <p className="mt-8 rounded-xl bg-cream px-4 py-3 text-xs leading-relaxed text-ink-soft">
