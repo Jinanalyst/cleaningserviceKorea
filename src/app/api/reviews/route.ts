@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { readById } from "@/lib/store";
 import {
   createReview,
@@ -99,6 +100,9 @@ export async function POST(request: NextRequest) {
     rating,
     body: text,
   });
+
+  // 파트너 상세 페이지 캐시를 즉시 무효화 → 다음 방문 시 새 후기가 바로 반영된다
+  revalidatePath(`/partners/${reservation.partnerId}`);
 
   return NextResponse.json({ review }, { status: 201 });
 }
