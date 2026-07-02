@@ -172,7 +172,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "이사 나가는 날, 짐 뺀 자리까지 원상복구로 마무리해요.",
     category: "residential",
     pricePerPyeong: 8000,
-    minPrice: 150000,
+    minPrice: 120000,
     duration: "4~6시간",
   },
   {
@@ -182,7 +182,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "보증금 걱정 없이 깔끔하게. 원룸·소형 평수 퇴실 청소.",
     category: "residential",
     pricePerPyeong: 6000,
-    minPrice: 120000,
+    minPrice: 90000,
     duration: "2~3시간",
   },
   {
@@ -202,7 +202,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "영업 전후 시간대에 맞춰 사업장을 깔끔하게 관리해요.",
     category: "commercial",
     pricePerPyeong: 5000,
-    minPrice: 150000,
+    minPrice: 100000,
     duration: "3~5시간",
   },
   {
@@ -212,7 +212,7 @@ export const SERVICES: ServiceType[] = [
     blurb: "주방·화장실·베란다 등 필요한 곳만 골라서 청소해요.",
     category: "partial",
     pricePerPyeong: 4000,
-    minPrice: 70000,
+    minPrice: 40000,
     duration: "1~2시간",
   },
 ];
@@ -256,6 +256,38 @@ export const PARTIAL_AREAS = [
 ];
 
 export const DEPOSIT = 30000; // 선결제 예약금 (고정)
+
+// 온라인 결제 = 예약금 30,000원 고정. 견적 전액 결제가 아님을 명확히 안내하는 공통 문구.
+export const PAYMENT_NOTICE =
+  "온라인 결제 금액은 청소 전체 비용이 아닌 예약 확정을 위한 예약금 30,000원입니다. 청소 총액은 공간 크기, 오염도, 추가 요청사항에 따라 달라질 수 있으며, 잔금은 청소 완료 후 현장에서 결제합니다.";
+
+// PG 심사·정책 페이지·푸터에서 공통으로 쓰는 사업자/서비스 정보.
+export const COMPANY = {
+  bizName: "체인랩스", // 상호
+  service: "손길", // 서비스명
+  ceo: "장진우", // 대표자
+  bizNumber: "382-25-02223", // 사업자등록번호
+  mailOrderNumber: "준비 중", // 통신판매업 신고번호
+  tel: "050-6990-8359", // 고객센터
+  email: "jangj6091@gmail.com", // 이메일
+  hours: "평일 09:00 - 18:00", // 운영시간
+  domain: "handway.online", // 도메인
+  address: "여수울로 50 연꽃마을4단지아파트 406-403", // 주소
+} as const;
+
+// 손길이 하는 일 — 정책 페이지·약관에서 반복되는 중개 플랫폼 정의.
+export const MEDIATION_NOTICE =
+  "손길은 고객과 청소 파트너를 연결하는 청소 예약 중개 플랫폼입니다. 청소 서비스는 제휴 청소 파트너가 수행하며, 손길은 예약 접수, 일정 조율, 파트너 배정, 고객 응대 및 예약 관리를 제공합니다.";
+
+// /service-info 페이지에 노출하는 서비스 목록 (예상 시작가 기준).
+export const SERVICE_INFO: { name: string; desc: string; startPrice: number }[] = [
+  { name: "가정 정기청소", desc: "주방, 화장실, 거실 등 생활공간 청소", startPrice: 60000 },
+  { name: "원룸 퇴거청소", desc: "원룸, 오피스텔 등 소형 공간 퇴실 청소", startPrice: 90000 },
+  { name: "입주청소", desc: "입주 전 빈집 상태의 청소", startPrice: 150000 },
+  { name: "이사청소", desc: "이사 전후 공간 청소", startPrice: 120000 },
+  { name: "부분청소", desc: "화장실, 주방, 베란다 등 일부 공간 청소", startPrice: 40000 },
+  { name: "사무실/상가청소", desc: "사무실, 매장, 상가 공간 청소", startPrice: 100000 },
+];
 
 export type Partner = {
   id: string;

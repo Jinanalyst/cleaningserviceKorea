@@ -13,6 +13,7 @@ import {
   BATH_OPTIONS,
   SPACE_TYPES,
   PARTIAL_AREAS,
+  PAYMENT_NOTICE,
   estimatePrice,
   formatKRW,
   partnerById,
@@ -57,6 +58,12 @@ export default function BookPage() {
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ id: string } | null>(null);
+
+  // 결제 전 필수 동의 (PG 심사 요건)
+  const [agreeDeposit, setAgreeDeposit] = useState(false);
+  const [agreeTotal, setAgreeTotal] = useState(false);
+  const [agreePolicy, setAgreePolicy] = useState(false);
+  const allAgreed = agreeDeposit && agreeTotal && agreePolicy;
 
   const svc = serviceById(serviceId);
   const category = svc?.category;
@@ -153,6 +160,10 @@ export default function BookPage() {
   }
 
   async function handlePay() {
+    if (!allAgreed) {
+      setError("결제 전 필수 확인 항목에 모두 동의해 주세요.");
+      return;
+    }
     setError(null);
     setPaying(true);
     // 목업 결제: 결제창이 뜬 것처럼 잠깐 대기
@@ -208,10 +219,14 @@ export default function BookPage() {
             )}
             <Row k="희망 업체" v={resolvedPartner?.name ?? ""} />
             <Row k="방문" v={`${date ? formatDateKo(date) : ""} ${timeSlot}`} />
-            <Row k="예상 총액" v={formatKRW(price)} />
-            <Row k="현장 잔금" v={formatKRW(Math.max(0, price - DEPOSIT))} />
+            <Row k="온라인 결제 (예약금)" v={formatKRW(DEPOSIT)} strong />
+            <Row k="예상 총액 (참고)" v={formatKRW(price)} />
+            <Row k="현장 잔금 (예상)" v={formatKRW(Math.max(0, price - DEPOSIT))} />
           </div>
-          <p className="mt-4 text-xs text-ink-soft">
+          <p className="mt-4 rounded-xl bg-cream px-4 py-3 text-left text-xs leading-relaxed text-ink-soft">
+            ⓘ {PAYMENT_NOTICE}
+          </p>
+          <p className="mt-3 text-xs text-ink-soft">
             로그인한 계정의 &lsquo;내 예약&rsquo;에서 진행 상태를 확인할 수 있어요.
           </p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
@@ -298,9 +313,15 @@ export default function BookPage() {
                       <p className="mt-2 text-xs font-bold text-brand">
                         {formatKRW(s.minPrice)}~
                       </p>
+                      <p className="mt-1 text-[11px] text-ink-soft">
+                        온라인 결제: 예약금 {formatKRW(DEPOSIT)}
+                      </p>
                     </button>
                   ))}
                 </div>
+                <p className="mt-3 rounded-xl bg-cream px-4 py-3 text-xs leading-relaxed text-ink-soft">
+                  ⓘ {PAYMENT_NOTICE}
+                </p>
               </Field>
 
               <Field title="공간 크기 (평)" hint="대략적인 평수를 입력하면 예상 견적을 계산해요.">
@@ -635,30 +656,84 @@ export default function BookPage() {
               </Field>
 
               <Field title="결제 정보">
-                <div className="rounded-2xl border border-line bg-white p-5">
+                {/* 온라인 결제 = 예약금 30,000원 고정 (강조) */}
+                <div className="rounded-2xl border-2 border-brand bg-brand-50 p-5">
+                  <p className="text-sm font-bold text-brand-700">
+                    온라인 결제 상품 · 손길 청소 예약금
+                  </p>
+                  <div className="mt-1 flex items-end justify-between">
+                    <span className="font-bold text-ink">지금 결제하는 금액</span>
+                    <span className="text-3xl font-black text-brand">
+                      {formatKRW(DEPOSIT)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-brand-700/80">
+                    예약 확정 및 청소 파트너 배정을 위한 예약금 (고정 금액)
+                  </p>
+                </div>
+
+                {/* 참고용 예상 금액 (온라인 결제 대상 아님) */}
+                <div className="mt-3 rounded-2xl border border-line bg-white p-5">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-ink-soft">예상 총 청소비</span>
+                    <span className="text-ink-soft">예상 총 청소비 (참고용)</span>
                     <span className="text-lg font-bold text-ink">{formatKRW(price)}</span>
                   </div>
-                  <div className="mt-2 flex items-baseline justify-between border-t border-line pt-3">
-                    <span className="font-bold text-ink">지금 결제 (예약금)</span>
-                    <span className="text-2xl font-black text-brand">{formatKRW(DEPOSIT)}</span>
-                  </div>
                   <div className="mt-2 flex items-baseline justify-between">
-                    <span className="text-ink-soft">청소 완료 후 현장 결제</span>
+                    <span className="text-ink-soft">청소 완료 후 현장 잔금 (예상)</span>
                     <span className="font-bold text-ink">
                       {formatKRW(Math.max(0, price - DEPOSIT))}
                     </span>
                   </div>
                   <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-ink-soft">
-                    ⓘ 이 금액은 <b>1인 작업 기준 예상가</b>예요. 평수·오염도·작업 범위에 따라
-                    추가 인력 또는 추가 시간이 발생할 수 있으며, 최종 금액은 방문·상담 후
+                    ⓘ 예상 총액은 <b>1인 작업 기준 참고 금액</b>이며 온라인 결제 대상이 아닙니다.
+                    평수·오염도·작업 범위에 따라 달라질 수 있고, 최종 금액은 방문·상담 후
                     확정됩니다.
                   </p>
                 </div>
-                <div className="mt-3 rounded-xl bg-mint-soft/60 px-4 py-3 text-xs leading-relaxed text-ink-soft">
-                  ⓘ 지금은 <b>목업(테스트) 결제</b>예요. 실제로 돈이 빠져나가지 않아요.
-                  아래 버튼을 누르면 결제가 완료된 것처럼 예약이 확정됩니다.
+
+                {/* 표준 결제 안내 (강조 박스) */}
+                <div className="mt-3 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 text-xs font-medium leading-relaxed text-brand-700">
+                  ⓘ {PAYMENT_NOTICE}
+                </div>
+              </Field>
+
+              {/* 결제 전 필수 동의 */}
+              <Field title="결제 전 확인 사항">
+                <div className="space-y-2">
+                  <ConsentCheck
+                    checked={agreeDeposit}
+                    onChange={setAgreeDeposit}
+                    label={`온라인 결제 금액은 청소 전체 비용이 아닌 예약금 ${formatKRW(DEPOSIT)}임을 확인했습니다.`}
+                  />
+                  <ConsentCheck
+                    checked={agreeTotal}
+                    onChange={setAgreeTotal}
+                    label="청소 총액은 공간 크기, 오염도, 추가 요청사항에 따라 달라질 수 있으며, 잔금은 현장 결제임을 확인했습니다."
+                  />
+                  <ConsentCheck
+                    checked={agreePolicy}
+                    onChange={setAgreePolicy}
+                    label={
+                      <>
+                        <Link href="/terms" className="text-brand underline" target="_blank">
+                          이용약관
+                        </Link>
+                        ,{" "}
+                        <Link href="/privacy" className="text-brand underline" target="_blank">
+                          개인정보처리방침
+                        </Link>
+                        ,{" "}
+                        <Link
+                          href="/refund-policy"
+                          className="text-brand underline"
+                          target="_blank"
+                        >
+                          환불정책
+                        </Link>
+                        에 동의합니다.
+                      </>
+                    }
+                  />
                 </div>
               </Field>
 
@@ -671,11 +746,18 @@ export default function BookPage() {
               <button
                 type="button"
                 onClick={handlePay}
-                disabled={paying}
-                className="w-full rounded-full bg-brand py-4 text-base font-black text-white shadow-lg shadow-brand/20 transition hover:bg-brand-600 disabled:opacity-70"
+                disabled={paying || !allAgreed}
+                className="w-full rounded-full bg-brand py-4 text-base font-black text-white shadow-lg shadow-brand/20 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {paying ? "결제 진행 중…" : `카드로 ${formatKRW(DEPOSIT)} 결제하고 예약 확정`}
+                {paying
+                  ? "결제 진행 중…"
+                  : `예약금 ${formatKRW(DEPOSIT)} 결제하고 예약하기`}
               </button>
+              {!allAgreed && (
+                <p className="-mt-2 text-center text-xs text-ink-soft">
+                  필수 확인 항목에 모두 동의하면 결제할 수 있어요.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -809,6 +891,33 @@ function ChipGroup({
         </button>
       ))}
     </div>
+  );
+}
+
+function ConsentCheck({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: React.ReactNode;
+}) {
+  return (
+    <label
+      className={[
+        "flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm transition",
+        checked ? "border-brand bg-brand-50" : "border-line bg-white hover:border-brand-200",
+      ].join(" ")}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+      />
+      <span className="leading-relaxed text-ink">{label}</span>
+    </label>
   );
 }
 

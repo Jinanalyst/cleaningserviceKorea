@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Link from "next/link";
 import AuthButtons from "@/components/AuthButtons";
+import { COMPANY } from "@/lib/data";
 import "./globals.css";
 
 const noto = Noto_Sans_KR({
@@ -74,15 +75,18 @@ function Header() {
 function Footer() {
   return (
     <footer className="mt-24 border-t border-line bg-cream-deep/40">
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
+        {/* 브랜드 */}
         <div className="space-y-3">
           <Logo />
           <p className="text-sm font-bold text-mint">마음을 담은 깨끗함</p>
           <p className="max-w-xs text-sm leading-relaxed text-ink-soft">
-            검증된 동네 청소 업체를 연결해 드리는 청소 중개 플랫폼이에요.
-            사람의 손길이 닿는 깨끗함을 이어드릴게요.
+            검증된 청소 파트너를 연결해 드리는 청소 예약 중개 플랫폼이에요.
+            온라인 결제는 예약금 3만원, 잔금은 청소 완료 후 현장에서 결제합니다.
           </p>
         </div>
+
+        {/* 바로가기 */}
         <div className="text-sm text-ink-soft">
           <p className="mb-3 font-bold text-ink">바로가기</p>
           <ul className="space-y-2">
@@ -95,25 +99,65 @@ function Footer() {
             <li>
               <Link href="/partners/apply" className="hover:text-brand">파트너 등록하기</Link>
             </li>
+          </ul>
+        </div>
+
+        {/* 이용안내·약관 */}
+        <div className="text-sm text-ink-soft">
+          <p className="mb-3 font-bold text-ink">이용안내</p>
+          <ul className="space-y-2">
             <li>
-              <Link href="/admin" className="hover:text-brand">파트너·운영 대시보드</Link>
+              <Link href="/service-info" className="hover:text-brand">서비스 상세정보</Link>
+            </li>
+            <li>
+              <Link href="/payment-info" className="hover:text-brand">결제금액 안내</Link>
+            </li>
+            <li>
+              <Link href="/refund-policy" className="hover:text-brand">환불정책</Link>
+            </li>
+            <li>
+              <Link href="/terms" className="hover:text-brand">이용약관</Link>
+            </li>
+            <li>
+              <Link href="/privacy" className="hover:text-brand">개인정보처리방침</Link>
             </li>
           </ul>
         </div>
+
+        {/* 고객센터·사업자 정보 */}
         <div className="text-sm text-ink-soft">
           <p className="mb-3 font-bold text-ink">고객센터</p>
-          <p>평일 09:00 – 18:00</p>
-          <p className="mt-4 text-xs leading-relaxed text-ink-soft/80">
-            손길 (체인랩스) · 대표 장진우
-            <br />
-            사업자등록번호 382-25-02223
-            <br />
-            여수울로 50 연꽃마을4단지아파트 406-403 · 전화 050-6990-8359
+          <p className="text-lg font-black text-ink">{COMPANY.tel}</p>
+          <p className="mt-0.5">운영시간 {COMPANY.hours}</p>
+          <p className="mt-1">
+            이메일{" "}
+            <a href={`mailto:${COMPANY.email}`} className="hover:text-brand">
+              {COMPANY.email}
+            </a>
           </p>
+          <div className="mt-4 space-y-0.5 text-xs leading-relaxed text-ink-soft/80">
+            <p>상호 {COMPANY.bizName} · 서비스명 {COMPANY.service}</p>
+            <p>대표자 {COMPANY.ceo}</p>
+            <p>사업자등록번호 {COMPANY.bizNumber}</p>
+            <p>통신판매업 신고번호 {COMPANY.mailOrderNumber}</p>
+            <p>{COMPANY.address}</p>
+            <p>{COMPANY.domain}</p>
+          </div>
         </div>
       </div>
+
+      {/* 중개 플랫폼 안내 */}
+      <div className="mx-auto max-w-6xl px-5 pb-8">
+        <p className="rounded-xl bg-white/60 px-4 py-3 text-xs leading-relaxed text-ink-soft ring-1 ring-line">
+          손길은 고객과 청소 파트너를 연결하는 청소 예약 중개 플랫폼입니다. 청소 서비스는
+          제휴 청소 파트너가 수행하며, 손길은 예약 접수, 일정 조율, 파트너 배정, 고객 응대 및
+          예약 관리를 제공합니다.
+        </p>
+      </div>
+
       <div className="border-t border-line py-5 text-center text-xs text-ink-soft/70">
-        © 2026 손길 (Songil). 청소는 파트너 업체가 수행하며, 손길은 예약을 중개합니다.
+        © 2026 {COMPANY.service} · {COMPANY.bizName}. 청소는 제휴 파트너가 수행하며, 손길은
+        예약을 중개합니다.
       </div>
     </footer>
   );
