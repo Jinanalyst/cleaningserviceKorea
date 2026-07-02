@@ -130,3 +130,28 @@ alter table public.partner_applications
 -- 예약을 로그인 계정(고객)과 연결 (본인 예약만 조회하도록)
 alter table public.reservations
   add column if not exists user_id uuid references auth.users(id);
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 고객 후기 테이블 (청소 완료 후 고객이 직접 작성)
+-- ══════════════════════════════════════════════════════════════
+create table if not exists public.reviews (
+  id             uuid primary key default gen_random_uuid(),
+  created_at     timestamptz not null default now(),
+  reservation_id text not null references public.reservations(id) on delete cascade,
+  partner_id     text not null,
+  service_id     text default '',
+  user_id        uuid references auth.users(id),
+  author_name    text not null,                       -- 표시용(마스킹된 이름)
+  rating         integer not null check (rating between 1 and 5),
+  body           text not null,
+  status         text not null default 'published'    -- published/hidden
+);
+
+-- 예약 1건당 후기 1개
+create unique index if not exists reviews_reservation_uk on public.reviews (reservation_id);
+create index if not exists reviews_partner_idx on public.reviews (partner_id);
+create index if not exists reviews_created_idx on public.reviews (created_at desc);
+
+-- RLS 활성화 (정책 없음 = service_role 키로만 접근, 브라우저 anon 접근 차단)
+alter table public.reviews enable row level security;

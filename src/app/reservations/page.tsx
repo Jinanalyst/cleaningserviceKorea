@@ -203,6 +203,21 @@ function ReservationCard({ r }: { r: Reservation }) {
             <p className="font-bold text-ink">{formatKRW(Math.max(0, r.price - (r.deposit ?? DEPOSIT)))}</p>
           </div>
         </div>
+
+        {/* 청소가 완료되면 후기 작성 */}
+        {r.status === "completed" && (
+          <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-medium text-amber-800">
+              ⭐ 청소가 완료됐어요! 후기를 남겨주시겠어요?
+            </p>
+            <Link
+              href={`/reservations/${r.id}/review`}
+              className="shrink-0 rounded-full bg-amber-500 px-5 py-2.5 text-center text-sm font-bold text-white transition hover:bg-amber-600"
+            >
+              후기 작성하기
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

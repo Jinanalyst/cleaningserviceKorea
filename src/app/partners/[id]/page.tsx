@@ -1,12 +1,43 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { COMPANY, PARTNERS, partnerById, reviewsFor } from "@/lib/data";
+import {
+  COMPANY,
+  PARTNERS,
+  partnerById,
+  reviewsFor,
+  serviceById,
+  type Review,
+} from "@/lib/data";
+import { listReviewsByPartner } from "@/lib/reviewStore";
 import { Stars, VerifyBadges, WorkPhoto } from "@/components/PartnerBits";
+
+// 새 후기가 반영되도록 최대 60초 캐시
+export const revalidate = 60;
 
 // 알려진 파트너는 정적 생성
 export function generateStaticParams() {
   return PARTNERS.map((p) => ({ id: p.id }));
+}
+
+// 고객이 작성한 DB 후기를 화면 표시용 형태로 변환
+async function loadReviews(partnerId: string): Promise<Review[]> {
+  const seed = reviewsFor(partnerId);
+  let submitted: Review[] = [];
+  try {
+    const rows = await listReviewsByPartner(partnerId);
+    submitted = rows.map((r) => ({
+      author: r.authorName,
+      rating: r.rating,
+      date: r.createdAt.slice(0, 10).replace(/-/g, "."),
+      service: serviceById(r.serviceId)?.name ?? "청소 서비스",
+      text: r.body,
+    }));
+  } catch {
+    submitted = [];
+  }
+  // 고객이 남긴 최신 후기를 먼저 보여준다
+  return [...submitted, ...seed];
 }
 
 export async function generateMetadata({
@@ -32,7 +63,7 @@ export default async function PartnerDetailPage({
   const partner = partnerById(id);
   if (!partner) notFound();
 
-  const reviews = reviewsFor(partner.id);
+  const reviews = await loadReviews(partner.id);
   const telHref = `tel:${COMPANY.tel.replace(/[^0-9]/g, "")}`;
 
   return (

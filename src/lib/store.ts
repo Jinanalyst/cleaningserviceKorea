@@ -142,6 +142,17 @@ export async function updateStatus(
   return fromRow(data as Row);
 }
 
+// 예약 코드로 단건 조회
+export async function readById(id: string): Promise<Reservation | null> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? fromRow(data as Row) : null;
+}
+
 // 특정 로그인 계정의 예약만 조회 (개인정보 보호)
 export async function readByUser(userId: string): Promise<Reservation[]> {
   const { data, error } = await getSupabase()
