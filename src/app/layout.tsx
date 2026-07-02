@@ -51,6 +51,9 @@ function Header() {
           <Link href="/#service-info" className="hover:text-ink transition-colors">
             서비스 안내
           </Link>
+          <Link href="/consult" className="hover:text-ink transition-colors">
+            견적 상담
+          </Link>
           <Link href="/reservations" className="hover:text-ink transition-colors">
             예약 조회
           </Link>
@@ -92,6 +95,9 @@ function Footer() {
           <ul className="space-y-2">
             <li>
               <Link href="/book" className="hover:text-brand">청소 예약하기</Link>
+            </li>
+            <li>
+              <Link href="/consult" className="hover:text-brand">견적 상담 신청</Link>
             </li>
             <li>
               <Link href="/reservations" className="hover:text-brand">내 예약 조회</Link>

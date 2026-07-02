@@ -95,6 +95,58 @@ export const APPLICATION_FLOW: ApplicationStatus[] = [
   "approved",
 ];
 
+// ── 고객 견적 상담 신청 (대면 상담 후 합의 견적) ──
+export type ConsultationStatus =
+  | "requested" // 상담 신청 접수
+  | "consulting" // 상담 진행 중 (전화·대면 조율)
+  | "quoted" // 합의 견적 확정 (관리자가 금액 입력)
+  | "confirmed" // 예약 성사
+  | "cancelled"; // 취소
+
+export const CONSULTATION_STATUS_META: Record<
+  ConsultationStatus,
+  { label: string; tone: string; dot: string; desc: string }
+> = {
+  requested: {
+    label: "상담 신청",
+    tone: "bg-amber-50 text-amber-700 ring-amber-200",
+    dot: "bg-amber-400",
+    desc: "상담 신청이 접수됐어요. 담당자가 곧 연락드려 방문·상담 일정을 잡을게요.",
+  },
+  consulting: {
+    label: "상담 진행 중",
+    tone: "bg-sky-50 text-sky-700 ring-sky-200",
+    dot: "bg-sky-400",
+    desc: "현장·전화 상담을 진행하고 있어요. 공간을 확인한 뒤 견적을 안내드릴게요.",
+  },
+  quoted: {
+    label: "견적 확정",
+    tone: "bg-violet-50 text-violet-700 ring-violet-200",
+    dot: "bg-violet-400",
+    desc: "상담을 통해 합의된 견적이 확정됐어요. 금액과 내용을 확인해 주세요.",
+  },
+  confirmed: {
+    label: "예약 성사",
+    tone: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    dot: "bg-emerald-400",
+    desc: "청소 예약이 확정됐어요! 방문 하루 전 다시 안내드릴게요.",
+  },
+  cancelled: {
+    label: "취소됨",
+    tone: "bg-rose-50 text-rose-700 ring-rose-200",
+    dot: "bg-rose-400",
+    desc: "상담이 취소됐어요. 언제든 다시 신청해 주세요.",
+  },
+};
+
+// 진행 트래커 순서 (취소는 별도)
+export const CONSULTATION_FLOW: ConsultationStatus[] = [
+  "requested",
+  "consulting",
+  "quoted",
+  "confirmed",
+];
+
 // 정산 계좌 은행 목록
 export const BANKS = [
   "국민은행",
@@ -269,6 +321,7 @@ export const COMPANY = {
   bizNumber: "382-25-02223", // 사업자등록번호
   mailOrderNumber: "준비 중", // 통신판매업 신고번호
   tel: "050-6990-8359", // 고객센터
+  kakao: "http://pf.kakao.com/_BTrPX/chat", // 카카오톡 상담 채널
   email: "jangj6091@gmail.com", // 이메일
   hours: "평일 09:00 - 18:00", // 운영시간
   domain: "handway.online", // 도메인

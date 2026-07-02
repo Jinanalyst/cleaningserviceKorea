@@ -165,3 +165,49 @@ alter table public.reviews enable row level security;
 insert into storage.buckets (id, name, public)
 values ('review-photos', 'review-photos', true)
 on conflict (id) do nothing;
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 고객 견적 상담 신청 (대면 상담 후 관리자가 합의 견적 입력)
+--   고객이 상담을 신청하면 여기에 쌓이고, 운영자(/admin/customers)가
+--   대면·전화 상담 후 합의된 견적 금액과 메모를 입력한다.
+-- ══════════════════════════════════════════════════════════════
+create table if not exists public.consultations (
+  id             text primary key,                    -- 상담 코드 (예: CS-8F3K2A)
+  created_at     timestamptz not null default now(),
+  customer_name  text not null,
+  phone          text not null,
+  address        text default '',
+  address_detail text default '',
+  service_id     text default '',                     -- 희망 서비스
+  pyeong         integer,                             -- 평수 (선택)
+  preferred_date text default '',                     -- 희망 방문일 (자유 입력)
+  notes          text default '',                     -- 요청사항
+  status         text not null default 'requested',   -- requested/consulting/quoted/confirmed/cancelled
+  quoted_price   integer,                             -- 합의된 견적 금액 (관리자 입력)
+  quote_note     text default '',                     -- 상담·견적 메모 (관리자 입력)
+  user_id        uuid references auth.users(id)       -- 로그인 고객 계정 연결
+);
+
+create index if not exists consultations_status_idx on public.consultations (status);
+create index if not exists consultations_phone_idx on public.consultations (phone);
+create index if not exists consultations_created_idx on public.consultations (created_at desc);
+create index if not exists consultations_user_idx on public.consultations (user_id);
+
+-- RLS 활성화 (정책 없음 = service_role 키로만 접근, 브라우저 anon 접근 차단)
+alter table public.consultations enable row level security;
+
+-- ── 데모 상담 (원하지 않으면 아래 블록은 지워도 됩니다) ──
+insert into public.consultations
+  (id, created_at, customer_name, phone, address, address_detail,
+   service_id, pyeong, preferred_date, notes, status, quoted_price, quote_note)
+values
+  ('CS-3M9KP2', '2026-07-01T02:30:00Z', '김도윤', '010-4567-1122',
+   '서울 송파구 올림픽로 300', '롯데캐슬 210동 1502호',
+   'movein', 34, '7월 둘째 주 평일', '입주 전 전체 청소 원해요. 베란다 2개, 반려동물 없음.',
+   'requested', null, ''),
+  ('CS-7QX4LB', '2026-06-29T05:10:00Z', '이서진', '010-9988-2211',
+   '경기 용인시 수지구 포은대로 500', '',
+   'office', 60, '평일 오전', '사무실 정기청소 상담 원합니다. 세금계산서 필요.',
+   'quoted', 420000, '대면 상담 완료. 주 1회 정기 계약 기준 회당 42만원 합의. 첫 방문 7/8 오전 8시.')
+on conflict (id) do nothing;

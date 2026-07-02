@@ -104,7 +104,7 @@ export default function AdminPartnersPage() {
       </div>
 
       {/* 탭 네비게이션 */}
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <Link
           href="/admin"
           className="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink-soft ring-1 ring-line transition hover:bg-cream-deep"
@@ -114,6 +114,12 @@ export default function AdminPartnersPage() {
         <span className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-cream">
           파트너 심사
         </span>
+        <Link
+          href="/admin/customers"
+          className="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink-soft ring-1 ring-line transition hover:bg-cream-deep"
+        >
+          고객 관리
+        </Link>
       </div>
 
       {/* 통계 */}
