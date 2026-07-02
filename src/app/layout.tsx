@@ -105,9 +105,11 @@ function Footer() {
           <p>평일 09:00 – 18:00</p>
           <p className="mt-1 text-lg font-black text-ink">1668-0000</p>
           <p className="mt-4 text-xs leading-relaxed text-ink-soft/80">
-            상호 체인랩스 · 대표 장진우
+            손길 (체인랩스) · 대표 장진우
             <br />
             사업자등록번호 382-25-02223
+            <br />
+            여수울로 50 연꽃마을4단지아파트 406-403
           </p>
         </div>
       </div>
