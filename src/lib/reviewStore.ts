@@ -4,6 +4,7 @@ import "server-only";
 import { getSupabase } from "./supabase";
 
 const TABLE = "reviews";
+const PHOTO_BUCKET = "review-photos";
 
 export type StoredReview = {
   id: string;
@@ -15,6 +16,7 @@ export type StoredReview = {
   authorName: string; // 마스킹된 표시 이름
   rating: number; // 1~5
   body: string;
+  photos: string[]; // 첨부 사진 공개 URL
 };
 
 type Row = {
@@ -27,6 +29,7 @@ type Row = {
   author_name: string;
   rating: number;
   body: string;
+  photos: string[] | null;
   status: string;
 };
 
@@ -41,7 +44,37 @@ function fromRow(r: Row): StoredReview {
     authorName: r.author_name,
     rating: r.rating,
     body: r.body,
+    photos: Array.isArray(r.photos) ? r.photos : [],
   };
+}
+
+// data: URL(base64) 이미지를 Storage에 업로드하고 공개 URL 목록을 반환한다.
+// 잘못된 형식은 건너뛴다. 실패 시 예외를 던진다.
+export async function uploadReviewPhotos(
+  reservationId: string,
+  images: string[]
+): Promise<string[]> {
+  const supabase = getSupabase();
+  const urls: string[] = [];
+
+  for (let i = 0; i < images.length; i++) {
+    const match = /^data:(image\/(png|jpe?g|webp));base64,(.+)$/i.exec(images[i]);
+    if (!match) continue;
+    const contentType = match[1];
+    const ext = contentType.split("/")[1].replace("jpeg", "jpg");
+    const buffer = Buffer.from(match[3], "base64");
+    const path = `${reservationId}/${Date.now()}-${i}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, buffer, { contentType, upsert: true });
+    if (error) throw new Error(`사진 업로드에 실패했어요: ${error.message}`);
+
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    urls.push(data.publicUrl);
+  }
+
+  return urls;
 }
 
 // 이름 마스킹: 홍길동 → 홍*동, 김서연 → 김*연, 이수 → 이*
@@ -85,6 +118,7 @@ export async function createReview(input: {
   authorName: string;
   rating: number;
   body: string;
+  photos: string[];
 }): Promise<StoredReview> {
   const { data, error } = await getSupabase()
     .from(TABLE)
@@ -96,6 +130,7 @@ export async function createReview(input: {
       author_name: input.authorName,
       rating: input.rating,
       body: input.body,
+      photos: input.photos,
       status: "published",
     })
     .select("*")

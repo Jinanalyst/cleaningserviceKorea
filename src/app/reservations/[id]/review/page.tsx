@@ -19,7 +19,39 @@ type ExistingReview = {
   body: string;
   authorName: string;
   createdAt: string;
+  photos?: string[];
 } | null;
+
+const MAX_PHOTOS = 4;
+
+// 업로드 전 브라우저에서 이미지를 축소·압축해 base64(JPEG) data URL로 변환한다.
+// 긴 변을 maxSide 이하로 줄여 업로드 용량을 낮춘다.
+async function compressImage(file: File, maxSide = 1600, quality = 0.8): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("파일을 읽을 수 없어요."));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("이미지를 불러올 수 없어요."));
+    el.src = dataUrl;
+  });
+
+  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL("image/jpeg", quality);
+}
 
 function StarPicker({
   value,
@@ -65,8 +97,34 @@ export default function ReviewPage() {
 
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function addPhotos(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setError(null);
+    const room = MAX_PHOTOS - photos.length;
+    if (room <= 0) {
+      setError(`사진은 최대 ${MAX_PHOTOS}장까지 첨부할 수 있어요.`);
+      return;
+    }
+    const picked = Array.from(files).slice(0, room);
+    setPhotoBusy(true);
+    try {
+      const encoded = await Promise.all(picked.map((f) => compressImage(f)));
+      setPhotos((prev) => [...prev, ...encoded]);
+    } catch {
+      setError("사진을 처리하지 못했어요. 다른 이미지를 시도해 주세요.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  }
 
   useEffect(() => {
     (async () => {
@@ -109,7 +167,7 @@ export default function ReviewPage() {
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservationId, rating, body: body.trim() }),
+        body: JSON.stringify({ reservationId, rating, body: body.trim(), photos }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "후기 등록에 실패했어요.");
@@ -118,6 +176,7 @@ export default function ReviewPage() {
         body: body.trim(),
         authorName: data.review.authorName,
         createdAt: data.review.createdAt,
+        photos: data.review.photos,
       });
       setState("done");
     } catch (e) {
@@ -203,6 +262,22 @@ export default function ReviewPage() {
                 <span className="text-line">{"★".repeat(5 - existing.rating)}</span>
               </div>
               <p className="mt-3 leading-relaxed text-ink">{existing.body}</p>
+              {existing.photos && existing.photos.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {existing.photos.map((src, i) => (
+                    <a
+                      key={src}
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block h-20 w-20 overflow-hidden rounded-xl ring-1 ring-line transition hover:opacity-90"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`후기 사진 ${i + 1}`} className="h-full w-full object-cover" loading="lazy" />
+                    </a>
+                  ))}
+                </div>
+              )}
               <p className="mt-4 text-xs text-ink-soft">
                 {existing.authorName} 님의 후기 · 소중한 의견 감사합니다 💚
               </p>
@@ -248,6 +323,51 @@ export default function ReviewPage() {
                   className="w-full resize-none rounded-xl border border-line bg-white px-4 py-3 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-100"
                 />
                 <p className="mt-1 text-right text-xs text-ink-soft">{body.length}/1000</p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-ink">
+                  사진 첨부 <span className="font-medium text-ink-soft">(선택 · 최대 {MAX_PHOTOS}장)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {photos.map((src, i) => (
+                    <div
+                      key={i}
+                      className="group relative h-20 w-20 overflow-hidden rounded-xl ring-1 ring-line"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`첨부 사진 ${i + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(i)}
+                        aria-label={`사진 ${i + 1} 삭제`}
+                        className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-xs font-bold text-white transition hover:bg-ink"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+
+                  {photos.length < MAX_PHOTOS && (
+                    <label
+                      className={`grid h-20 w-20 cursor-pointer place-items-center rounded-xl border border-dashed border-line text-center text-xs font-medium text-ink-soft transition hover:border-brand hover:text-brand ${
+                        photoBusy ? "pointer-events-none opacity-60" : ""
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          addPhotos(e.target.files);
+                          e.target.value = "";
+                        }}
+                      />
+                      {photoBusy ? "처리 중…" : "＋ 사진"}
+                    </label>
+                  )}
+                </div>
               </div>
 
               {error && (

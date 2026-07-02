@@ -148,6 +148,10 @@ create table if not exists public.reviews (
   status         text not null default 'published'    -- published/hidden
 );
 
+-- 후기 첨부 사진 URL 목록 (Supabase Storage 공개 URL)
+alter table public.reviews
+  add column if not exists photos jsonb not null default '[]'::jsonb;
+
 -- 예약 1건당 후기 1개
 create unique index if not exists reviews_reservation_uk on public.reviews (reservation_id);
 create index if not exists reviews_partner_idx on public.reviews (partner_id);
@@ -155,3 +159,9 @@ create index if not exists reviews_created_idx on public.reviews (created_at des
 
 -- RLS 활성화 (정책 없음 = service_role 키로만 접근, 브라우저 anon 접근 차단)
 alter table public.reviews enable row level security;
+
+-- ── 후기 사진 저장용 Storage 버킷 (공개 읽기) ──
+-- 업로드는 service_role(서버)로만 수행하고, 표시는 공개 URL로 한다.
+insert into storage.buckets (id, name, public)
+values ('review-photos', 'review-photos', true)
+on conflict (id) do nothing;

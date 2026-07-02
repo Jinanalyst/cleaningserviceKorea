@@ -388,6 +388,7 @@ export type Review = {
   date: string; // "2026.06.20"
   service: string; // 이용한 서비스
   text: string;
+  photos?: string[]; // 첨부 사진 공개 URL (없을 수 있음)
 };
 
 export const REVIEWS: Record<string, Review[]> = {

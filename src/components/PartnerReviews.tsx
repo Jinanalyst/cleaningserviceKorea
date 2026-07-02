@@ -101,6 +101,28 @@ export default function PartnerReviews({
                 </span>
               </div>
               <p className="mt-2 text-sm leading-relaxed text-ink">{r.text}</p>
+              {r.photos && r.photos.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {r.photos.map((src, pi) => (
+                    <a
+                      key={src}
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block h-20 w-20 overflow-hidden rounded-xl ring-1 ring-line transition hover:opacity-90"
+                    >
+                      {/* 후기 사진 (외부 Storage URL) */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={src}
+                        alt={`${r.author} 님의 후기 사진 ${pi + 1}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

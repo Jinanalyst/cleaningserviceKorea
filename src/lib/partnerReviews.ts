@@ -16,6 +16,7 @@ export async function getPartnerReviews(partnerId: string): Promise<Review[]> {
       date: r.createdAt.slice(0, 10).replace(/-/g, "."),
       service: serviceById(r.serviceId)?.name ?? "청소 서비스",
       text: r.body,
+      photos: r.photos,
     }));
   } catch {
     submitted = [];

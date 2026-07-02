@@ -5,6 +5,7 @@ import {
   createReview,
   getReviewByReservation,
   maskName,
+  uploadReviewPhotos,
 } from "@/lib/reviewStore";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 
@@ -58,6 +59,12 @@ export async function POST(request: NextRequest) {
   const reservationId = typeof body.reservationId === "string" ? body.reservationId : "";
   const rating = Number(body.rating);
   const text = typeof body.body === "string" ? body.body.trim() : "";
+  const photos = Array.isArray(body.photos)
+    ? body.photos.filter((p): p is string => typeof p === "string")
+    : [];
+
+  const MAX_PHOTOS = 4;
+  const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // base64 문자열 기준 약 3.7MB 원본
 
   const errors: string[] = [];
   if (!reservationId) errors.push("예약 정보가 없어요.");
@@ -65,6 +72,12 @@ export async function POST(request: NextRequest) {
     errors.push("별점을 선택해 주세요.");
   if (text.length < 5) errors.push("후기를 5자 이상 작성해 주세요.");
   if (text.length > 1000) errors.push("후기는 1000자 이내로 작성해 주세요.");
+  if (photos.length > MAX_PHOTOS)
+    errors.push(`사진은 최대 ${MAX_PHOTOS}장까지 첨부할 수 있어요.`);
+  if (photos.some((p) => !/^data:image\/(png|jpe?g|webp);base64,/i.test(p)))
+    errors.push("사진 형식이 올바르지 않아요.");
+  if (photos.some((p) => p.length > MAX_PHOTO_BYTES))
+    errors.push("사진 용량이 너무 커요. 더 작은 이미지를 올려주세요.");
   if (errors.length) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
@@ -91,6 +104,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // 사진을 Storage에 먼저 업로드하고 URL을 후기와 함께 저장한다.
+  let photoUrls: string[] = [];
+  if (photos.length) {
+    try {
+      photoUrls = await uploadReviewPhotos(reservationId, photos);
+    } catch (e) {
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : "사진 업로드에 실패했어요." },
+        { status: 500 }
+      );
+    }
+  }
+
   const review = await createReview({
     reservationId,
     partnerId: reservation.partnerId,
@@ -99,6 +125,7 @@ export async function POST(request: NextRequest) {
     authorName: maskName(reservation.customerName),
     rating,
     body: text,
+    photos: photoUrls,
   });
 
   // 파트너 상세 페이지 캐시를 즉시 무효화 → 다음 방문 시 새 후기가 바로 반영된다
