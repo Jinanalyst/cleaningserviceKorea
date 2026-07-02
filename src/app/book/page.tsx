@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Calendar from "@/components/Calendar";
 import {
@@ -36,6 +36,12 @@ export default function BookPage() {
   const [serviceId, setServiceId] = useState<string>("");
   const [pyeong, setPyeong] = useState<string>("");
   const [partnerId, setPartnerId] = useState<string>(""); // "" = 자동배정
+
+  // 파트너 상세 페이지에서 "이 파트너로 예약하기"로 넘어오면 해당 업체를 미리 선택
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("partner");
+    if (requested && partnerById(requested)) setPartnerId(requested);
+  }, []);
   const [date, setDate] = useState<string | null>(null);
   const [timeSlot, setTimeSlot] = useState<string>("");
   const [customerName, setCustomerName] = useState("");
@@ -298,7 +304,12 @@ export default function BookPage() {
                       type="button"
                       onClick={() => {
                         setServiceId(s.id);
-                        setPartnerId("");
+                        // 미리 선택된 업체가 이 서비스를 제공하면 유지, 아니면 자동배정
+                        setPartnerId((cur) => {
+                          if (!cur) return "";
+                          const p = partnerById(cur);
+                          return p && p.specialties.includes(s.name) ? cur : "";
+                        });
                       }}
                       className={[
                         "rounded-2xl border p-4 text-left transition",

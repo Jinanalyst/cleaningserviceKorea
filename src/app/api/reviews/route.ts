@@ -5,7 +5,7 @@ import {
   getReviewByReservation,
   maskName,
 } from "@/lib/reviewStore";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 
 // GET /api/reviews?reservation=SG-XXXX
 //  - 로그인 본인 예약의 기존 후기 존재 여부/내용을 반환 (후기 작성 페이지용)
@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
   }
 
+  const isAdmin = isAdminEmail(user.email);
   const reservation = await readById(reservationId);
-  if (!reservation || reservation.userId !== user.id) {
+  // 관리자는 전체 예약(게스트 예약 포함)을 열람할 수 있다. (내 예약 목록과 동일한 정책)
+  if (!reservation || (!isAdmin && reservation.userId !== user.id)) {
     return NextResponse.json({ error: "예약을 찾을 수 없어요." }, { status: 404 });
   }
 
@@ -66,9 +68,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
 
-  // 예약 소유·상태 검증
+  // 예약 소유·상태 검증 (관리자는 전체 예약에 후기 작성 가능)
+  const isAdmin = isAdminEmail(user.email);
   const reservation = await readById(reservationId);
-  if (!reservation || reservation.userId !== user.id) {
+  if (!reservation || (!isAdmin && reservation.userId !== user.id)) {
     return NextResponse.json({ error: "예약을 찾을 수 없어요." }, { status: 404 });
   }
   if (reservation.status !== "completed") {

@@ -196,7 +196,7 @@ export default async function PartnerDetailPage({
       {/* 액션 버튼 */}
       <div className="sticky bottom-4 mt-6 flex gap-3">
         <Link
-          href="/book"
+          href={`/book?partner=${partner.id}`}
           className="flex-[2] rounded-full bg-brand py-3.5 text-center text-base font-black text-white shadow-lg shadow-brand/20 transition hover:bg-brand-600"
         >
           이 파트너로 예약하기
