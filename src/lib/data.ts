@@ -289,6 +289,10 @@ export const SERVICE_INFO: { name: string; desc: string; startPrice: number }[] 
   { name: "사무실/상가청소", desc: "사무실, 매장, 상가 공간 청소", startPrice: 100000 },
 ];
 
+// 파트너 검증 배지 (사업자/신원/리뷰 확인)
+export const VERIFICATION_BADGES = ["사업자 확인", "신원 확인", "리뷰 확인"] as const;
+export type VerificationBadge = (typeof VERIFICATION_BADGES)[number];
+
 export type Partner = {
   id: string;
   name: string;
@@ -298,7 +302,10 @@ export type Partner = {
   jobs: number;
   since: number;
   specialties: string[];
-  region: string;
+  region: string; // 요약 지역 (한 줄)
+  regions: string[]; // 활동 지역 목록
+  verifications: VerificationBadge[]; // 검증 배지
+  photos: string[]; // 대표 작업 사진 라벨 (플레이스홀더)
   accent: string; // 아바타 배경색 (tailwind 클래스)
   intro: string;
 };
@@ -314,6 +321,9 @@ export const PARTNERS: Partner[] = [
     since: 2018,
     specialties: ["가정 정기청소", "정리수납", "부분 청소"],
     region: "서울 전역 · 경기 남부",
+    regions: ["서울 강남구", "서울 서초구", "성남시 분당구", "성남시 수정구"],
+    verifications: ["사업자 확인", "신원 확인", "리뷰 확인"],
+    photos: ["주방 후드 시공 후", "화장실 물때 제거", "거실 정리수납", "베란다 청소"],
     accent: "bg-rose-100 text-rose-600",
     intro:
       "'남의 집이 아니라 우리 집처럼'을 원칙으로 6년째 일하고 있어요. 반려동물 가정도 편하게 맡겨 주세요.",
@@ -328,6 +338,9 @@ export const PARTNERS: Partner[] = [
     since: 2016,
     specialties: ["입주청소", "이사청소", "오피스텔 청소"],
     region: "서울 · 인천 · 경기",
+    regions: ["서울 전역", "인천 전역", "경기 부천시", "경기 김포시"],
+    verifications: ["사업자 확인", "신원 확인", "리뷰 확인"],
+    photos: ["입주 전 빈집 청소", "베란다 곰팡이 제거", "새시·창틀 세척", "실리콘 오염 제거"],
     accent: "bg-sky-100 text-sky-600",
     intro:
       "빈집 청소만 8년. 곰팡이, 실리콘 오염, 베란다 물때까지 사진으로 전후를 남겨 드려요.",
@@ -342,6 +355,9 @@ export const PARTNERS: Partner[] = [
     since: 2020,
     specialties: ["가정 정기청소", "원룸 퇴거청소", "부분 청소"],
     region: "서울 강북 · 강서",
+    regions: ["서울 강북구", "서울 노원구", "서울 은평구", "서울 강서구"],
+    verifications: ["사업자 확인", "신원 확인", "리뷰 확인"],
+    photos: ["원룸 퇴거 청소", "냉장고 내부 세척", "화장실 줄눈 청소", "주방 기름때 제거"],
     accent: "bg-emerald-100 text-emerald-600",
     intro:
       "1인 가구가 부담 없이 부를 수 있는 청소를 만들고 있어요. 작은 공간일수록 더 꼼꼼하게.",
@@ -356,6 +372,9 @@ export const PARTNERS: Partner[] = [
     since: 2019,
     specialties: ["사무실·상가청소", "오피스텔 청소"],
     region: "서울 · 경기",
+    regions: ["서울 마포구", "서울 영등포구", "경기 고양시", "경기 광명시"],
+    verifications: ["사업자 확인", "신원 확인", "리뷰 확인"],
+    photos: ["사무실 바닥 왁스", "상가 유리창 세척", "공용부 정기관리", "탕비실 청소"],
     accent: "bg-amber-100 text-amber-600",
     intro:
       "영업에 방해되지 않게 이른 아침·늦은 밤 시간대 청소를 전문으로 해요. 세금계산서 발행 가능.",

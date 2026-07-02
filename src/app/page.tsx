@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PARTNERS, SERVICES, DEPOSIT, formatKRW, reviewsFor } from "@/lib/data";
+import { PARTNERS, SERVICES, DEPOSIT, formatKRW } from "@/lib/data";
 import { readApprovedPartners } from "@/lib/applicationStore";
 import PartnerCard from "@/components/PartnerCard";
 import LiveBookings from "@/components/LiveBookings";
@@ -192,7 +192,7 @@ export default async function Home() {
         />
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           {PARTNERS.map((p) => (
-            <PartnerCard key={p.id} partner={p} reviews={reviewsFor(p.id)} />
+            <PartnerCard key={p.id} partner={p} />
           ))}
 
           {/* 심사 승인된 신규 파트너 (공개 정보만) */}
