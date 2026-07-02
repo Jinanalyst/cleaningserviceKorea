@@ -4,32 +4,36 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 
+type Provider = "google" | "kakao";
+
 function LoginInner() {
   const params = useSearchParams();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(
     params.get("error") ? "로그인에 실패했어요. 다시 시도해 주세요." : null
   );
 
-  async function signInWithGoogle() {
+  async function signInWith(provider: Provider) {
     setError(null);
-    setLoading(true);
+    setLoading(provider);
     try {
       const supabase = createSupabaseBrowser();
       const next = params.get("next") ?? "/onboarding";
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
         },
       });
       if (error) throw error;
-      // 성공 시 구글로 리디렉트됨
+      // 성공 시 소셜 로그인 화면으로 리디렉트됨
     } catch {
       setError("로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.");
-      setLoading(false);
+      setLoading(null);
     }
   }
+
+  const busy = loading !== null;
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center px-5 py-16 text-center">
@@ -38,18 +42,27 @@ function LoginInner() {
         <img src="/logo-mark.svg" alt="손길" className="mx-auto h-16 w-16" />
         <h1 className="mt-5 text-2xl font-black text-ink">손길 시작하기</h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-          구글 계정으로 간편하게 로그인하고
+          카카오 또는 구글 계정으로 간편하게 로그인하고
           <br />
           고객 또는 청소 파트너로 시작하세요.
         </p>
 
         <button
-          onClick={signInWithGoogle}
-          disabled={loading}
-          className="mt-7 flex w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-6 py-3.5 text-base font-bold text-ink shadow-sm transition hover:bg-cream-deep disabled:opacity-60"
+          onClick={() => signInWith("kakao")}
+          disabled={busy}
+          className="mt-7 flex w-full items-center justify-center gap-3 rounded-full bg-[#FEE500] px-6 py-3.5 text-base font-bold text-[#191600] shadow-sm transition hover:brightness-95 disabled:opacity-60"
+        >
+          <KakaoIcon />
+          {loading === "kakao" ? "카카오로 이동 중…" : "카카오로 계속하기"}
+        </button>
+
+        <button
+          onClick={() => signInWith("google")}
+          disabled={busy}
+          className="mt-3 flex w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-6 py-3.5 text-base font-bold text-ink shadow-sm transition hover:bg-cream-deep disabled:opacity-60"
         >
           <GoogleIcon />
-          {loading ? "구글로 이동 중…" : "Google 계정으로 계속하기"}
+          {loading === "google" ? "구글로 이동 중…" : "Google 계정으로 계속하기"}
         </button>
 
         {error && (
@@ -63,6 +76,17 @@ function LoginInner() {
         </p>
       </div>
     </div>
+  );
+}
+
+function KakaoIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#191600"
+        d="M12 3C6.48 3 2 6.48 2 10.77c0 2.77 1.86 5.2 4.65 6.57-.2.72-.74 2.66-.85 3.07-.13.51.19.5.4.37.16-.11 2.6-1.77 3.66-2.49.7.1 1.42.16 2.14.16 5.52 0 10-3.48 10-7.68C22 6.48 17.52 3 12 3z"
+      />
+    </svg>
   );
 }
 
