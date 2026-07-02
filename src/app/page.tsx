@@ -144,6 +144,45 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ── Service info ── */}
+      <section id="service-info" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-16">
+        <SectionHead
+          eyebrow="서비스 안내"
+          title="손길은 청소 예약 중개 플랫폼이에요"
+          sub="손길이 무엇을 하고, 결제와 역할이 어떻게 나뉘는지 알려드릴게요."
+        />
+        <div className="mt-8 rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-8">
+          <p className="max-w-3xl text-base leading-relaxed text-ink-soft">
+            손길은 고객이 원하는{" "}
+            <b className="text-ink">청소 유형 · 날짜 · 시간 · 주소 · 요청사항</b>을 입력하면,
+            검증된 <b className="text-ink">청소 파트너 업체</b>를 연결해 드리는 청소 예약
+            중개 플랫폼입니다.
+          </p>
+
+          <div className="mt-8 grid gap-5 sm:grid-cols-3">
+            <InfoCard emoji="💳" title="예약 & 결제">
+              온라인에서 <b className="text-ink">예약금 {formatKRW(DEPOSIT)}</b>을 결제하면
+              예약이 확정돼요. 청소 완료 후 <b className="text-ink">잔금은 현장</b>에서 파트너
+              업체에 직접 결제합니다.
+            </InfoCard>
+            <InfoCard emoji="🧹" title="청소 파트너가 하는 일">
+              실제 청소 업무는 손길과 제휴한 <b className="text-ink">검증된 청소 파트너
+              업체</b>가 직접 수행합니다.
+            </InfoCard>
+            <InfoCard emoji="🤝" title="손길이 하는 일">
+              <b className="text-ink">예약 접수, 일정 조율, 파트너 배정, 고객 응대, 예약
+              관리</b>를 담당해요.
+            </InfoCard>
+          </div>
+
+          <p className="mt-6 rounded-xl bg-cream px-4 py-3 text-xs leading-relaxed text-ink-soft">
+            ⓘ 손길은 청소 서비스의 예약을 중개하는 플랫폼으로, 실제 청소 용역은 파트너
+            업체가 제공합니다. 서비스 관련 책임과 환불 등은 관련 법령 및 이용약관을
+            따릅니다.
+          </p>
+        </div>
+      </section>
+
       {/* ── Partners ── */}
       <section id="partners" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-16">
         <SectionHead
@@ -226,6 +265,26 @@ function Stat({ n, label }: { n: string; label: string }) {
     <div>
       <p className="text-2xl font-black text-ink">{n}</p>
       <p className="text-xs text-ink-soft">{label}</p>
+    </div>
+  );
+}
+
+function InfoCard({
+  emoji,
+  title,
+  children,
+}: {
+  emoji: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-line bg-cream/40 p-5">
+      <div className="grid h-11 w-11 place-items-center rounded-xl bg-white text-2xl shadow-sm">
+        {emoji}
+      </div>
+      <h3 className="mt-3 font-black text-ink">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{children}</p>
     </div>
   );
 }

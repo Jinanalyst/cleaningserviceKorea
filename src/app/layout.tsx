@@ -47,6 +47,9 @@ function Header() {
           <Link href="/#how" className="hover:text-ink transition-colors">
             이용 방법
           </Link>
+          <Link href="/#service-info" className="hover:text-ink transition-colors">
+            서비스 안내
+          </Link>
           <Link href="/reservations" className="hover:text-ink transition-colors">
             예약 조회
           </Link>
