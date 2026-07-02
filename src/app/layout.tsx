@@ -103,7 +103,6 @@ function Footer() {
         <div className="text-sm text-ink-soft">
           <p className="mb-3 font-bold text-ink">고객센터</p>
           <p>평일 09:00 – 18:00</p>
-          <p className="mt-1 text-lg font-black text-ink">1668-0000</p>
           <p className="mt-4 text-xs leading-relaxed text-ink-soft/80">
             손길 (체인랩스) · 대표 장진우
             <br />
