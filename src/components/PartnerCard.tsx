@@ -1,11 +1,9 @@
 import Link from "next/link";
 import type { Partner } from "@/lib/data";
-import { COMPANY } from "@/lib/data";
 import { VerifyBadges, WorkPhoto } from "@/components/PartnerBits";
+import ConsultButton from "@/components/ConsultButton";
 
 export default function PartnerCard({ partner }: { partner: Partner }) {
-  const telHref = `tel:${COMPANY.tel.replace(/[^0-9]/g, "")}`;
-
   return (
     <div className="group relative flex flex-col rounded-3xl border border-line bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       {/* 카드 전체 클릭 → 상세 페이지 (stretched link) */}
@@ -74,12 +72,7 @@ export default function PartnerCard({ partner }: { partner: Partner }) {
         >
           업체 보기
         </Link>
-        <a
-          href={telHref}
-          className="flex-1 rounded-full bg-white py-2.5 text-center text-sm font-bold text-brand ring-1 ring-brand-200 transition hover:bg-brand-50"
-        >
-          상담 요청
-        </a>
+        <ConsultButton className="w-full rounded-full bg-white py-2.5 text-center text-sm font-bold text-brand ring-1 ring-brand-200 transition hover:bg-brand-50" />
       </div>
     </div>
   );

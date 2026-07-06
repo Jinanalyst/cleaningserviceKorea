@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { COMPANY, PARTNERS, partnerById } from "@/lib/data";
+import { PARTNERS, partnerById } from "@/lib/data";
 import { getPartnerReviews } from "@/lib/partnerReviews";
 import { Stars, VerifyBadges, WorkPhoto } from "@/components/PartnerBits";
 import PartnerReviews from "@/components/PartnerReviews";
+import ConsultButton from "@/components/ConsultButton";
 
 // 새 후기가 반영되도록 최대 60초 캐시 (초기 렌더용, 이후 클라이언트가 라이브로 갱신)
 export const revalidate = 60;
@@ -38,7 +39,6 @@ export default async function PartnerDetailPage({
   if (!partner) notFound();
 
   const reviews = await getPartnerReviews(partner.id);
-  const telHref = `tel:${COMPANY.tel.replace(/[^0-9]/g, "")}`;
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10 sm:py-12">
@@ -145,12 +145,7 @@ export default async function PartnerDetailPage({
         >
           이 파트너로 예약하기
         </Link>
-        <a
-          href={telHref}
-          className="flex-1 rounded-full bg-white py-3.5 text-center text-base font-bold text-brand ring-1 ring-brand-200 transition hover:bg-brand-50"
-        >
-          상담 요청
-        </a>
+        <ConsultButton className="w-full rounded-full bg-white py-3.5 text-center text-base font-bold text-brand ring-1 ring-brand-200 transition hover:bg-brand-50" />
       </div>
     </div>
   );
