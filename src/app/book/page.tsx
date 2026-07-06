@@ -14,7 +14,6 @@ import {
   SPACE_TYPES,
   PARTIAL_AREAS,
   PAYMENT_NOTICE,
-  estimatePrice,
   formatKRW,
   partnerById,
   serviceById,
@@ -134,11 +133,6 @@ export default function BookPage() {
       : category === "partial"
         ? "청소 공간"
         : "집 정보";
-  const price = useMemo(
-    () => (svc && pyNum ? estimatePrice(serviceId, pyNum) : 0),
-    [serviceId, pyNum, svc]
-  );
-
   // 선택한 서비스에 맞는 추천 파트너
   const matchingPartners = useMemo(() => {
     if (!svc) return PARTNERS;
@@ -230,8 +224,7 @@ export default function BookPage() {
             <Row k="희망 업체" v={resolvedPartner?.name ?? ""} />
             <Row k="방문" v={`${date ? formatDateKo(date) : ""} ${timeSlot}`} />
             <Row k="온라인 결제 (예약금)" v={formatKRW(DEPOSIT)} strong />
-            <Row k="예상 총액 (참고)" v={formatKRW(price)} />
-            <Row k="현장 잔금 (예상)" v={formatKRW(Math.max(0, price - DEPOSIT))} />
+            <Row k="청소 총액" v="방문·상담 후 협의" />
           </div>
           <p className="mt-4 rounded-xl bg-cream px-4 py-3 text-left text-xs leading-relaxed text-ink-soft">
             ⓘ {PAYMENT_NOTICE}
@@ -326,7 +319,7 @@ export default function BookPage() {
                       <p className="mt-2 font-bold text-ink">{s.name}</p>
                       <p className="mt-1 text-xs leading-relaxed text-ink-soft">{s.blurb}</p>
                       <p className="mt-2 text-xs font-bold text-brand">
-                        {formatKRW(s.minPrice)}~
+                        방문·상담 후 협의
                       </p>
                       <p className="mt-1 text-[11px] text-ink-soft">
                         온라인 결제: 예약금 {formatKRW(DEPOSIT)}
@@ -339,7 +332,7 @@ export default function BookPage() {
                 </p>
               </Field>
 
-              <Field title="공간 크기 (평)" hint="대략적인 평수를 입력하면 예상 견적을 계산해요.">
+              <Field title="공간 크기 (평)" hint="대략적인 평수를 알려주시면 상담 시 참고해요.">
                 <div className="flex items-center gap-3">
                   <input
                     type="number"
@@ -352,11 +345,6 @@ export default function BookPage() {
                     className="w-32 rounded-xl border border-line bg-white px-4 py-3 text-lg font-bold text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-100"
                   />
                   <span className="text-ink-soft">평</span>
-                  {price > 0 && (
-                    <span className="ml-auto rounded-full bg-brand-50 px-4 py-2 text-sm font-bold text-brand-700">
-                      예상 견적 {formatKRW(price)}
-                    </span>
-                  )}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {[9, 18, 24, 32, 45].map((p) => (
@@ -371,8 +359,8 @@ export default function BookPage() {
                   ))}
                 </div>
                 <p className="mt-3 text-xs leading-relaxed text-ink-soft">
-                  ⓘ 1인 작업 기준 예상가예요. 오염도·작업 범위에 따라 추가 인력/시간이
-                  붙을 수 있고, 최종 금액은 방문·상담 후 확정됩니다.
+                  ⓘ 청소 금액은 공간 크기·오염도·작업 범위에 따라 달라져요. 최종
+                  금액은 방문·상담 후 협의로 확정됩니다.
                 </p>
               </Field>
 
@@ -687,22 +675,20 @@ export default function BookPage() {
                   </p>
                 </div>
 
-                {/* 참고용 예상 금액 (온라인 결제 대상 아님) */}
+                {/* 청소 총액 — 방문·상담 후 협의 (온라인 결제 대상 아님) */}
                 <div className="mt-3 rounded-2xl border border-line bg-white p-5">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-ink-soft">예상 총 청소비 (참고용)</span>
-                    <span className="text-lg font-bold text-ink">{formatKRW(price)}</span>
+                    <span className="text-ink-soft">청소 총액</span>
+                    <span className="text-lg font-bold text-ink">방문·상담 후 협의</span>
                   </div>
                   <div className="mt-2 flex items-baseline justify-between">
-                    <span className="text-ink-soft">청소 완료 후 현장 잔금 (예상)</span>
-                    <span className="font-bold text-ink">
-                      {formatKRW(Math.max(0, price - DEPOSIT))}
-                    </span>
+                    <span className="text-ink-soft">청소 완료 후 현장 잔금</span>
+                    <span className="font-bold text-ink">협의 금액에서 예약금 차감</span>
                   </div>
                   <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-ink-soft">
-                    ⓘ 예상 총액은 <b>1인 작업 기준 참고 금액</b>이며 온라인 결제 대상이 아닙니다.
-                    평수·오염도·작업 범위에 따라 달라질 수 있고, 최종 금액은 방문·상담 후
-                    확정됩니다.
+                    ⓘ 청소 총액은 온라인 결제 대상이 아니에요. 공간 크기·오염도·작업
+                    범위에 따라 달라지며, 최종 금액은 방문·상담 후 협의로 확정하고
+                    잔금은 현장에서 결제합니다.
                   </p>
                 </div>
 
@@ -882,10 +868,8 @@ export default function BookPage() {
             </div>
             <div className="mt-4 border-t border-line pt-4">
               <div className="flex justify-between text-sm text-ink-soft">
-                <span>예상 견적</span>
-                <span className="font-bold text-ink">
-                  {price ? formatKRW(price) : "—"}
-                </span>
+                <span>청소 총액</span>
+                <span className="font-bold text-ink">상담 후 협의</span>
               </div>
               <div className="mt-1 flex justify-between">
                 <span className="font-bold text-ink">예약금</span>

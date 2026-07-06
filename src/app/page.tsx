@@ -89,7 +89,7 @@ export default async function Home() {
         <SectionHead
           eyebrow="어떤 청소가 필요하세요?"
           title="공간에 맞는 청소를 골라보세요"
-          sub="평수를 입력하면 예상 견적을 바로 알려드려요."
+          sub="필요한 청소를 고르면, 금액은 방문·상담 후 협의로 정해요."
         />
         <div className="mt-10 grid gap-5 sm:grid-cols-3">
           {SERVICES.map((s) => (
@@ -108,8 +108,8 @@ export default async function Home() {
                   <dd className="font-bold text-ink">{s.duration}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-ink-soft">시작 가격</dt>
-                  <dd className="font-bold text-brand">{formatKRW(s.minPrice)}~</dd>
+                  <dt className="text-ink-soft">청소 금액</dt>
+                  <dd className="font-bold text-brand">상담 후 협의</dd>
                 </div>
               </dl>
             </div>
@@ -120,9 +120,9 @@ export default async function Home() {
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-line bg-cream-deep/40 px-5 py-4 text-sm leading-relaxed text-ink-soft">
           <span className="text-base">ⓘ</span>
           <p>
-            표시된 <b className="text-ink">시작 가격은 1인 작업 기준</b>이에요. 평수, 오염도,
-            작업 범위에 따라 추가 인력 또는 추가 시간이 발생할 수 있으며, 최종 금액은
-            방문·상담 후 확정됩니다.
+            <b className="text-ink">청소 금액은 방문·상담 후 협의</b>로 정해요. 평수, 오염도,
+            작업 범위에 따라 달라질 수 있으며, 온라인 결제는 예약금 3만원으로 고정되고
+            잔금은 청소 완료 후 현장에서 결제합니다.
           </p>
         </div>
       </section>

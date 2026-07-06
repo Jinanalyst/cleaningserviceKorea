@@ -37,8 +37,7 @@ export default function ServiceInfoPage() {
               <ul className="mt-2 space-y-1 text-sm text-ink-soft">
                 <li>· {s.desc}</li>
                 <li>
-                  · 예상가:{" "}
-                  <b className="text-ink">{formatKRW(s.startPrice)}부터</b>
+                  · 청소 금액: <b className="text-ink">방문·상담 후 협의</b>
                 </li>
                 <li>
                   · 온라인 결제:{" "}
@@ -51,9 +50,9 @@ export default function ServiceInfoPage() {
       </PolicySection>
 
       <CalloutBox>
-        표시된 금액은 예상 시작가이며, 실제 총액은 공간 크기, 오염도, 짐 유무, 추가
-        요청사항에 따라 달라질 수 있습니다. 온라인 결제는 예약금 {formatKRW(DEPOSIT)}으로
-        고정되며, 잔금은 청소 완료 후 현장에서 결제합니다.
+        청소 총액은 공간 크기, 오염도, 짐 유무, 추가 요청사항에 따라 달라지며 방문·상담
+        후 협의로 확정됩니다. 온라인 결제는 예약금 {formatKRW(DEPOSIT)}으로 고정되며,
+        잔금은 청소 완료 후 현장에서 결제합니다.
       </CalloutBox>
     </PolicyLayout>
   );

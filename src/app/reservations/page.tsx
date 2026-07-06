@@ -190,7 +190,7 @@ function ReservationCard({ r }: { r: Reservation }) {
           <Info k="방문 일시" v={`${formatDateKo(r.date)} ${r.timeSlot}`} />
           <Info k="예약자" v={`${r.customerName}`} />
           <Info k="주소" v={`${r.address} ${r.addressDetail}`.trim()} />
-          <Info k="예상 총액" v={formatKRW(r.price)} />
+          <Info k="청소 총액" v="상담 후 협의" />
         </dl>
 
         <div className="mt-5 flex items-center justify-between rounded-2xl bg-brand-50 px-5 py-4">
@@ -200,7 +200,7 @@ function ReservationCard({ r }: { r: Reservation }) {
           </div>
           <div className="text-right">
             <p className="text-xs text-ink-soft">현장 잔금</p>
-            <p className="font-bold text-ink">{formatKRW(Math.max(0, r.price - (r.deposit ?? DEPOSIT)))}</p>
+            <p className="font-bold text-ink">상담 후 협의</p>
           </div>
         </div>
 
