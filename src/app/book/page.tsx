@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Calendar from "@/components/Calendar";
+import { KakaoConsultButton } from "@/components/KakaoConsult";
 import {
   PARTNERS,
   SERVICES,
@@ -245,6 +246,13 @@ export default function BookPage() {
             >
               홈으로
             </Link>
+          </div>
+          <div className="mt-3 border-t border-line pt-4">
+            <p className="text-xs text-ink-soft">문의할 내용이 있으면 편하게 연락 주세요.</p>
+            <KakaoConsultButton
+              label="카카오톡으로 문의"
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#FEE500] px-6 py-2.5 text-sm font-bold text-[#3C1E1E] transition hover:brightness-95"
+            />
           </div>
         </div>
       </div>
@@ -876,6 +884,17 @@ export default function BookPage() {
                 <span className="font-black text-brand">{formatKRW(DEPOSIT)}</span>
               </div>
             </div>
+          </div>
+
+          {/* 카카오톡 상담 */}
+          <div className="mt-4 rounded-2xl border border-line bg-cream/60 p-4 text-center">
+            <p className="text-xs leading-relaxed text-ink-soft">
+              예약이 망설여지거나 궁금한 점이 있나요?
+            </p>
+            <KakaoConsultButton
+              label="카카오톡으로 문의"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-[#FEE500] px-4 py-2.5 text-sm font-bold text-[#3C1E1E] transition hover:brightness-95"
+            />
           </div>
 
           {/* 네비게이션 */}

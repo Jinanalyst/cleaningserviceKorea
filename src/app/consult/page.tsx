@@ -9,6 +9,7 @@ import {
   formatKRW,
   type ConsultationStatus,
 } from "@/lib/data";
+import KakaoConsultCard, { KakaoConsultButton } from "@/components/KakaoConsult";
 
 type Consultation = {
   id: string;
@@ -116,6 +117,10 @@ export default function ConsultPage() {
             </p>
           </div>
           <div className="mt-6 flex flex-col gap-2">
+            <KakaoConsultButton
+              label="카카오톡으로 추가 문의"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#FEE500] px-6 py-2.5 text-sm font-bold text-[#3C1E1E] transition hover:brightness-95"
+            />
             <button
               onClick={() => setDone(null)}
               className="rounded-full bg-ink px-6 py-2.5 text-sm font-bold text-cream"
@@ -147,6 +152,10 @@ export default function ConsultPage() {
         담당자가 연락해 상담 일정을 잡고, 대면 상담 후 <b>합의된 견적</b>을
         안내드립니다. 상담은 무료예요.
       </p>
+
+      <div className="mt-6">
+        <KakaoConsultCard desc="양식 작성이 번거로우면 카카오톡 채널로 바로 상담하셔도 돼요. 담당자가 채팅으로 안내드려요." />
+      </div>
 
       <form
         onSubmit={submit}
