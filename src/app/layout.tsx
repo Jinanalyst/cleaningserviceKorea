@@ -23,7 +23,7 @@ function Logo() {
     <Link href="/" className="flex items-center gap-2 group">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo-mark.svg"
+        src="/logo-mark.png"
         alt=""
         aria-hidden="true"
         className="h-9 w-9 transition-transform group-hover:-rotate-6"

@@ -39,7 +39,7 @@ function LoginInner() {
     <div className="mx-auto flex max-w-md flex-col items-center px-5 py-16 text-center">
       <div className="animate-rise w-full rounded-[2rem] border border-line bg-white p-8 shadow-xl">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-mark.svg" alt="손길" className="mx-auto h-16 w-16" />
+        <img src="/logo-mark.png" alt="손길" className="mx-auto h-16 w-16" />
         <h1 className="mt-5 text-2xl font-black text-ink">손길 시작하기</h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">
           카카오 또는 구글 계정으로 간편하게 로그인하고
