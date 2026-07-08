@@ -4,13 +4,13 @@ import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 import { getRequestUser } from "@/lib/appAuth";
 import {
   DEPOSIT,
-  estimatePrice,
   partnerById,
   serviceById,
   categoryOf,
   TIME_SLOTS,
   type PropertyInfo,
 } from "@/lib/data";
+import { computeEstimate } from "@/lib/pricing";
 
 // 서비스 성격에 맞게 집/회사/부분청소 정보를 정리한다.
 function sanitizeProperty(
@@ -120,7 +120,19 @@ export async function POST(request: NextRequest) {
   // 로그인 상태면 예약을 계정과 연결 (웹 쿠키 또는 앱 Bearer 토큰)
   const user = await getRequestUser(request);
 
-  const price = estimatePrice(serviceId, py);
+  // 견적 계산 (기본견적 × 난이도 × 주거유형 × 일정 + 옵션비)
+  const difficulty =
+    typeof body.difficulty === "string" ? body.difficulty : "normal";
+  const options = Array.isArray(body.options)
+    ? body.options.filter((o): o is string => typeof o === "string")
+    : [];
+  const price = computeEstimate({
+    pyeong: py,
+    difficulty,
+    propertyType: property.propertyType,
+    date,
+    options,
+  }).final;
   const reservation = await createReservation({
     partnerId,
     serviceId,

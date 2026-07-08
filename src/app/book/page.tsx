@@ -19,6 +19,7 @@ import {
   partnerById,
   serviceById,
 } from "@/lib/data";
+import { DIFFICULTY, OPTIONS, computeEstimate } from "@/lib/pricing";
 
 type Step = 0 | 1 | 2 | 3 | 4;
 const STEP_LABELS = ["서비스", "날짜·시간", "정보 입력", "예약금 결제"];
@@ -61,6 +62,13 @@ export default function BookPage() {
   const [areas, setAreas] = useState<string[]>([]);
   const [floorInfo, setFloorInfo] = useState("");
 
+  // 견적용: 오염 정도(난이도) + 추가 옵션
+  const [difficulty, setDifficulty] = useState("normal");
+  const [options, setOptions] = useState<string[]>([]);
+  function toggleOption(id: string) {
+    setOptions((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ id: string } | null>(null);
@@ -78,6 +86,15 @@ export default function BookPage() {
   const svc = serviceById(serviceId);
   const category = svc?.category;
   const pyNum = Number(pyeong) || 0;
+
+  // 실시간 견적 (기본견적 × 난이도 × 주거유형 × 일정 + 옵션비)
+  const est = computeEstimate({
+    pyeong: pyNum,
+    difficulty,
+    propertyType,
+    date: date ?? "",
+    options,
+  });
 
   function toggleArea(a: string) {
     setAreas((prev) =>
@@ -189,6 +206,8 @@ export default function BookPage() {
           addressDetail,
           notes,
           property: buildProperty(),
+          difficulty,
+          options,
         }),
       });
       const data = await res.json();
@@ -604,6 +623,65 @@ export default function BookPage() {
                 </Field>
               )}
 
+              <Field
+                title="오염 정도"
+                hint="오염이 심할수록 작업 시간·인력이 늘어 견적에 반영돼요."
+              >
+                <div className="flex flex-wrap gap-2">
+                  {DIFFICULTY.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setDifficulty(d.id)}
+                      className={[
+                        "rounded-full border px-4 py-2 text-sm font-bold transition",
+                        difficulty === d.id
+                          ? "border-brand bg-brand text-white"
+                          : "border-line bg-white text-ink-soft hover:border-brand-200",
+                      ].join(" ")}
+                    >
+                      {d.label}{" "}
+                      <span className="font-normal opacity-70">×{d.factor}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-ink-soft">
+                  {DIFFICULTY.find((d) => d.id === difficulty)?.desc}
+                </p>
+              </Field>
+
+              <Field
+                title="추가 옵션"
+                hint="필요한 항목을 선택하면 견적에 더해져요."
+              >
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {OPTIONS.map((o) => {
+                    const sel = options.includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => toggleOption(o.id)}
+                        className={[
+                          "flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition",
+                          sel
+                            ? "border-brand bg-brand-50 ring-1 ring-brand"
+                            : "border-line bg-white hover:border-brand-200",
+                        ].join(" ")}
+                      >
+                        <span className="font-bold text-ink">
+                          {sel ? "☑ " : "☐ "}
+                          {o.label}
+                        </span>
+                        <span className="font-bold text-brand">
+                          +{formatKRW(o.price)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+
               <Field title="예약자 정보">
                 <div className="grid gap-4">
                   <Input
@@ -875,12 +953,55 @@ export default function BookPage() {
               <SummaryRow k="일시" v={date ? `${formatDateKo(date)} ${timeSlot}`.trim() : "—"} />
             </div>
             <div className="mt-4 border-t border-line pt-4">
-              <div className="flex justify-between text-sm text-ink-soft">
-                <span>청소 총액</span>
-                <span className="font-bold text-ink">상담 후 협의</span>
-              </div>
-              <div className="mt-1 flex justify-between">
-                <span className="font-bold text-ink">예약금</span>
+              {pyNum > 0 ? (
+                <>
+                  <p className="text-xs font-bold text-ink-soft">예상 견적</p>
+                  <div className="mt-2 space-y-1 text-xs text-ink-soft">
+                    <div className="flex justify-between">
+                      <span>기본 견적 ({pyNum}평)</span>
+                      <span className="font-bold text-ink">{formatKRW(est.base)}</span>
+                    </div>
+                    {est.difficulty !== 1 && (
+                      <div className="flex justify-between">
+                        <span>난이도</span>
+                        <span className="font-bold text-ink">×{est.difficulty}</span>
+                      </div>
+                    )}
+                    {est.housing !== 1 && (
+                      <div className="flex justify-between">
+                        <span>주거유형</span>
+                        <span className="font-bold text-ink">×{est.housing}</span>
+                      </div>
+                    )}
+                    {est.schedule !== 1 && (
+                      <div className="flex justify-between">
+                        <span>{est.scheduleLabel} 방문</span>
+                        <span className="font-bold text-ink">×{est.schedule}</span>
+                      </div>
+                    )}
+                    {est.optionsFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>추가 옵션</span>
+                        <span className="font-bold text-ink">+{formatKRW(est.optionsFee)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
+                    <span className="text-sm font-bold text-ink">최종 예상 견적</span>
+                    <span className="text-lg font-black text-brand">{formatKRW(est.final)}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-ink-soft">
+                    최종 금액은 방문·상담 후 확정될 수 있어요.
+                  </p>
+                </>
+              ) : (
+                <div className="flex justify-between text-sm text-ink-soft">
+                  <span>예상 견적</span>
+                  <span className="font-bold text-ink">평수 입력 시 표시</span>
+                </div>
+              )}
+              <div className="mt-3 flex justify-between border-t border-line pt-3">
+                <span className="font-bold text-ink">지금 결제 (예약금)</span>
                 <span className="font-black text-brand">{formatKRW(DEPOSIT)}</span>
               </div>
             </div>
