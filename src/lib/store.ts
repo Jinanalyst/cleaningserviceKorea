@@ -153,6 +153,29 @@ export async function readById(id: string): Promise<Reservation | null> {
   return data ? fromRow(data as Row) : null;
 }
 
+// 예약 가능 현황용 — 오늘 이후 예약된 (날짜·시간대·업체) 슬롯만 반환.
+// 개인정보(이름·연락처·주소)는 절대 포함하지 않는다. 취소 건은 제외.
+export async function readBookedSlots(): Promise<
+  { date: string; timeSlot: string; partnerId: string }[]
+> {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  const from = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(
+    t.getDate()
+  ).padStart(2, "0")}`;
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("date, time_slot, partner_id")
+    .neq("status", "cancelled")
+    .gte("date", from);
+  if (error) return [];
+  return (data ?? []).map((r) => ({
+    date: r.date as string,
+    timeSlot: r.time_slot as string,
+    partnerId: r.partner_id as string,
+  }));
+}
+
 // 특정 로그인 계정의 예약만 조회 (개인정보 보호)
 export async function readByUser(userId: string): Promise<Reservation[]> {
   const { data, error } = await getSupabase()
