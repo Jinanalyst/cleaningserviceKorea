@@ -83,6 +83,39 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ── App download ── */}
+      <section id="app" className="mx-auto max-w-6xl scroll-mt-20 px-5 pb-4">
+        <div className="flex flex-col items-center gap-5 rounded-[2rem] border border-line bg-white p-6 shadow-sm sm:flex-row sm:justify-between sm:p-8">
+          <div className="flex items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.png" alt="" aria-hidden="true" className="h-16 w-16" />
+            <div>
+              <p className="text-lg font-black text-ink">손길 앱으로 더 편하게</p>
+              <p className="mt-1 max-w-md text-sm leading-relaxed text-ink-soft">
+                예약·견적 상담·내 예약 확인까지 앱에서 간편하게. 안드로이드에서 지금 바로
+                설치할 수 있어요.
+              </p>
+            </div>
+          </div>
+          <div className="flex w-full flex-col items-center gap-2 sm:w-auto sm:items-end">
+            <a
+              href="/songil-app.apk"
+              download
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-brand/20 transition-transform hover:scale-105 active:scale-95 sm:w-auto"
+            >
+              📱 앱 다운로드 (안드로이드)
+            </a>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-cream px-3 py-1 text-xs font-medium text-ink-soft">
+              <span className="h-1.5 w-1.5 rounded-full bg-mint" /> Google Play 출시 준비 중
+            </span>
+          </div>
+        </div>
+        <p className="mt-2 px-2 text-center text-xs leading-relaxed text-ink-soft/80 sm:text-left">
+          ⓘ APK 설치 시 “출처를 알 수 없는 앱 설치”를 허용해야 할 수 있어요. iOS 버전은 준비
+          중입니다.
+        </p>
+      </section>
+
       {/* ── Services ── */}
       <section id="services" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-16">
         <SectionHead
