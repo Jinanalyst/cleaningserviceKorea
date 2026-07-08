@@ -26,10 +26,9 @@ export default async function Home() {
               🧺 검증된 동네 청소 업체 중개
             </span>
             <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-ink sm:text-5xl">
-              집안일은 잠시 내려두세요.
+              손으로 전하는 깨끗함,
               <br />
-              <span className="hand-underline">사람의 손길</span>이
-              <br className="sm:hidden" /> 대신 채울게요.
+              <span className="hand-underline">손길</span>
             </h1>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-soft">
               날짜만 고르면 끝. 손길이 신뢰할 수 있는 청소 업체를 연결하고,
