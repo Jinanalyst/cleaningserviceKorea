@@ -7,7 +7,8 @@ import {
   maskName,
   uploadReviewPhotos,
 } from "@/lib/reviewStore";
-import { getCurrentUser, isAdminEmail } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/auth";
+import { getRequestUser } from "@/lib/appAuth";
 
 // GET /api/reviews?reservation=SG-XXXX
 //  - 로그인 본인 예약의 기존 후기 존재 여부/내용을 반환 (후기 작성 페이지용)
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const user = await getCurrentUser();
+  const user = await getRequestUser(request);
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
   }
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/reviews → 청소 완료된 본인 예약에 후기 작성
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+  const user = await getRequestUser(request);
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
   }

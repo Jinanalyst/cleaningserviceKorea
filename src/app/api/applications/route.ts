@@ -3,6 +3,7 @@ import {
   createApplication,
   readAllApplications,
   readApplicationsByUser,
+  uploadPartnerPhotos,
 } from "@/lib/applicationStore";
 import { SERVICES } from "@/lib/data";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
@@ -54,6 +55,13 @@ export async function POST(request: NextRequest) {
       )
     : [];
 
+  // 업체 대표 사진 (base64 data URL, 신뢰용) — 선택, 최대 6장
+  const photos = Array.isArray(body.photos)
+    ? body.photos.filter((p): p is string => typeof p === "string")
+    : [];
+  const MAX_PHOTOS = 6;
+  const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
   const errors: string[] = [];
   if (!companyName) errors.push("업체명을 입력해 주세요.");
   if (!ownerName) errors.push("대표자명을 입력해 주세요.");
@@ -66,6 +74,12 @@ export async function POST(request: NextRequest) {
     errors.push("계좌번호를 정확히 입력해 주세요.");
   if (!accountHolder) errors.push("예금주를 입력해 주세요.");
   if (services.length === 0) errors.push("전문 청소 분야를 하나 이상 선택해 주세요.");
+  if (photos.length > MAX_PHOTOS)
+    errors.push(`사진은 최대 ${MAX_PHOTOS}장까지 첨부할 수 있어요.`);
+  if (photos.some((p) => !/^data:image\/(png|jpe?g|webp);base64,/i.test(p)))
+    errors.push("사진 형식이 올바르지 않아요.");
+  if (photos.some((p) => p.length > MAX_PHOTO_BYTES))
+    errors.push("사진 용량이 너무 커요. 더 작은 이미지를 올려주세요.");
 
   if (errors.length) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
@@ -91,6 +105,15 @@ export async function POST(request: NextRequest) {
     intro,
     userId,
   });
+
+  // 사진을 신청 id 기준으로 Storage(partner-photos)에 업로드 (승인 시 노출)
+  if (photos.length) {
+    try {
+      await uploadPartnerPhotos(application.id, photos);
+    } catch {
+      // 사진 업로드 실패해도 신청 자체는 접수된 것으로 처리
+    }
+  }
 
   return NextResponse.json({ application }, { status: 201 });
 }

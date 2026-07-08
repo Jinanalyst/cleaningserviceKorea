@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createReservation, readAll, readByUser } from "@/lib/store";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
+import { getRequestUser } from "@/lib/appAuth";
 import {
   DEPOSIT,
   estimatePrice,
@@ -116,8 +117,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
 
-  // 로그인 상태면 예약을 계정과 연결 (본인 예약 조회용)
-  const user = await getCurrentUser();
+  // 로그인 상태면 예약을 계정과 연결 (웹 쿠키 또는 앱 Bearer 토큰)
+  const user = await getRequestUser(request);
 
   const price = estimatePrice(serviceId, py);
   const reservation = await createReservation({

@@ -4,6 +4,46 @@ import { getSupabase } from "./supabase";
 import type { ApplicationStatus } from "./data";
 
 const TABLE = "partner_applications";
+const PHOTO_BUCKET = "partner-photos";
+
+// data:URL(base64) 업체 사진을 Storage에 업로드하고 공개 URL 목록 반환 (service_role).
+export async function uploadPartnerPhotos(
+  appId: string,
+  images: string[]
+): Promise<string[]> {
+  const supabase = getSupabase();
+  const urls: string[] = [];
+  for (let i = 0; i < images.length; i++) {
+    const m = /^data:(image\/(png|jpe?g|webp));base64,(.+)$/i.exec(images[i]);
+    if (!m) continue;
+    const contentType = m[1];
+    const ext = contentType.split("/")[1].replace("jpeg", "jpg");
+    const buffer = Buffer.from(m[3], "base64");
+    const path = `${appId}/${Date.now()}-${i}.${ext}`;
+    const { error } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, buffer, { contentType, upsert: true });
+    if (error) throw new Error(`사진 업로드에 실패했어요: ${error.message}`);
+    urls.push(supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl);
+  }
+  return urls;
+}
+
+// 업체(신청 id) 폴더의 사진 공개 URL 목록.
+export async function listPartnerPhotos(appId: string): Promise<string[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .list(appId, { limit: 12, sortBy: { column: "name", order: "asc" } });
+  if (error || !data) return [];
+  return data
+    .filter((f) => f.name && !f.name.startsWith("."))
+    .map(
+      (f) =>
+        supabase.storage.from(PHOTO_BUCKET).getPublicUrl(`${appId}/${f.name}`).data
+          .publicUrl
+    );
+}
 
 export type Application = {
   id: string; // 신청 코드 (예: PT-8F3K2A)
@@ -160,6 +200,7 @@ export type PublicPartner = {
   services: string[];
   regions: string;
   intro: string;
+  photos: string[];
 };
 
 export async function readApprovedPartners(): Promise<PublicPartner[]> {
@@ -169,11 +210,15 @@ export async function readApprovedPartners(): Promise<PublicPartner[]> {
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   if (error) return [];
-  return (data ?? []).map((r) => ({
+  const base = (data ?? []).map((r) => ({
     id: r.id as string,
     companyName: r.company_name as string,
     services: (r.services as string[]) ?? [],
     regions: (r.regions as string) ?? "",
     intro: (r.intro as string) ?? "",
   }));
+  // 각 업체의 대표 사진(Storage) 첨부
+  return Promise.all(
+    base.map(async (p) => ({ ...p, photos: await listPartnerPhotos(p.id) }))
+  );
 }
