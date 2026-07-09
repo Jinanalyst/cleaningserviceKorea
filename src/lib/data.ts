@@ -328,6 +328,15 @@ export const COMPANY = {
   address: "여수울로 50 연꽃마을4단지아파트 406-403", // 주소
 } as const;
 
+// 모바일 앱(안드로이드) 다운로드 정보 — /app 페이지·홈 다운로드 섹션에서 사용.
+// apk 파일은 public/ 에 위치. 새 버전 배포 시 앱을 재빌드해 public/songil-app.apk 교체.
+export const APP = {
+  apk: "/songil-app.apk",
+  version: "1.0.0",
+  androidReady: true,
+  iosReady: false,
+} as const;
+
 // 손길이 하는 일 — 정책 페이지·약관에서 반복되는 중개 플랫폼 정의.
 export const MEDIATION_NOTICE =
   "손길은 고객과 청소 파트너를 연결하는 청소 예약 중개 플랫폼입니다. 청소 서비스는 제휴 청소 파트너가 수행하며, 손길은 예약 접수, 일정 조율, 파트너 배정, 고객 응대 및 예약 관리를 제공합니다.";
