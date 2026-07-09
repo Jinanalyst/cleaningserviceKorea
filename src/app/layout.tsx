@@ -133,6 +133,9 @@ function Footer() {
             <li>
               <Link href="/privacy" className="hover:text-brand">개인정보처리방침</Link>
             </li>
+            <li>
+              <Link href="/account-deletion" className="hover:text-brand">계정·데이터 삭제</Link>
+            </li>
           </ul>
         </div>
 

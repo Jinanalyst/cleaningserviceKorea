@@ -207,6 +207,22 @@ export default function AppDownloadPage() {
             📥 앱 다운로드
           </a>
         </div>
+
+        {/* ── 계정·데이터 삭제 안내 (Google Play 데이터 삭제 요구사항) ── */}
+        <div className="mt-6 flex flex-col items-start gap-3 rounded-2xl border border-line bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-bold text-ink">계정·데이터 삭제를 원하시나요?</p>
+            <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+              앱 또는 아래 페이지에서 언제든 계정과 개인정보 삭제를 요청할 수 있어요.
+            </p>
+          </div>
+          <Link
+            href="/account-deletion"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-cream px-6 py-3 text-sm font-bold text-ink transition hover:bg-cream-deep"
+          >
+            계정·데이터 삭제 요청 →
+          </Link>
+        </div>
       </section>
     </div>
   );
