@@ -186,3 +186,17 @@ export async function readByUser(userId: string): Promise<Reservation[]> {
   if (error) throw new Error(error.message);
   return (data as Row[]).map(fromRow);
 }
+
+// 특정 업체(파트너)에 배정된 예약만 조회 — 파트너 대시보드용.
+// 파트너는 자기 배정 예약의 고객 정보(연락·주소)를 봐야 작업이 가능하므로 전체 필드를 반환한다.
+// (조회 권한 검증은 라우트에서 로그인 파트너의 승인된 업체 id 로 제한한다.)
+export async function readByPartnerIds(partnerIds: string[]): Promise<Reservation[]> {
+  if (partnerIds.length === 0) return [];
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("*")
+    .in("partner_id", partnerIds)
+    .order("date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data as Row[]).map(fromRow);
+}

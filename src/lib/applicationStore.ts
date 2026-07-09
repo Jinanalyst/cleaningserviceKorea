@@ -181,6 +181,18 @@ export async function updateApplication(
   return fromRow(data as Row);
 }
 
+// 로그인 업체 계정의 "승인된" 파트너 id 목록 (예약 조회 권한 판별용).
+// 예약 테이블의 partner_id 는 승인된 신청 id(PT-XXXXXX)를 그대로 사용한다.
+export async function readApprovedPartnerIdsByUser(userId: string): Promise<string[]> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "approved");
+  if (error) return [];
+  return (data ?? []).map((r) => r.id as string);
+}
+
 // 특정 로그인 계정이 낸 신청만 조회 (개인정보 보호)
 export async function readApplicationsByUser(userId: string): Promise<Application[]> {
   const { data, error } = await getSupabase()
