@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import MessageThread from "@/components/MessageThread";
 import {
   STATUS_META,
-  partnerById,
+  PARTNERS,
   serviceById,
   formatKRW,
   formatProperty,
@@ -30,7 +31,12 @@ type Reservation = {
   price: number;
   deposit: number;
   status: ReservationStatus;
+  agreedPrice: number | null;
+  partnerQuote: number | null;
+  partnerQuoteNote: string;
 };
+
+type AssignablePartner = { id: string; name: string };
 
 const STATUS_ORDER: ReservationStatus[] = [
   "pending",
@@ -51,13 +57,36 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ReservationStatus | "all">("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [approved, setApproved] = useState<AssignablePartner[]>([]);
+  const [priceDraft, setPriceDraft] = useState<Record<string, string>>({});
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  // 배정 가능한 업체 = 기본 시드 파트너 + 심사 승인된 신규 파트너
+  const partnerOptions: AssignablePartner[] = useMemo(
+    () => [...PARTNERS.map((p) => ({ id: p.id, name: p.name })), ...approved],
+    [approved]
+  );
+
+  function partnerNameOf(id: string) {
+    return partnerOptions.find((p) => p.id === id)?.name ?? "미배정";
+  }
 
   async function load() {
     setLoading(true);
     try {
       const res = await fetch("/api/reservations", { cache: "no-store" });
       const data = await res.json();
-      setRows(data.reservations ?? []);
+      const list: Reservation[] = data.reservations ?? [];
+      setRows(list);
+      setPriceDraft((prev) => {
+        const next = { ...prev };
+        for (const r of list) {
+          if (next[r.id] === undefined) {
+            next[r.id] = r.agreedPrice != null ? String(r.agreedPrice) : "";
+          }
+        }
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -65,21 +94,49 @@ export default function AdminPage() {
 
   useEffect(() => {
     load();
+    // 승인된 신규 파트너 목록 (배정 드롭다운용)
+    fetch("/api/partners", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) =>
+        setApproved(
+          (d.partners ?? []).map((p: { id: string; companyName: string }) => ({
+            id: p.id,
+            name: p.companyName,
+          }))
+        )
+      )
+      .catch(() => setApproved([]));
   }, []);
 
-  async function changeStatus(id: string, status: ReservationStatus) {
+  async function patchReservation(
+    id: string,
+    body: { status?: ReservationStatus; partnerId?: string; agreedPrice?: number | null }
+  ) {
     setUpdating(id);
-    // 낙관적 업데이트
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     try {
-      await fetch(`/api/reservations/${id}`, {
+      const res = await fetch(`/api/reservations/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       });
+      const data = await res.json();
+      if (res.ok && data.reservation) {
+        setRows((prev) => prev.map((r) => (r.id === id ? data.reservation : r)));
+      }
     } finally {
       setUpdating(null);
     }
+  }
+
+  async function changeStatus(id: string, status: ReservationStatus) {
+    // 낙관적 업데이트
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    await patchReservation(id, { status });
+  }
+
+  function saveAgreedPrice(id: string) {
+    const digits = (priceDraft[id] ?? "").replace(/[^\d]/g, "");
+    patchReservation(id, { agreedPrice: digits ? Number(digits) : null });
   }
 
   const stats = useMemo(() => {
@@ -166,8 +223,8 @@ export default function AdminPage() {
         <div className="mt-6 space-y-3">
           {visible.map((r) => {
             const svc = serviceById(r.serviceId);
-            const partner = partnerById(r.partnerId);
             const meta = STATUS_META[r.status];
+            const isOpen = openId === r.id;
             return (
               <div
                 key={r.id}
@@ -189,7 +246,7 @@ export default function AdminPage() {
                         {svc?.emoji} {svc?.name} · {r.pyeong}평
                       </span>
                       <span>🗓 {formatDateKo(r.date)} {r.timeSlot}</span>
-                      <span>🏢 {partner?.name ?? "미배정"}</span>
+                      <span>🏢 {partnerNameOf(r.partnerId)}</span>
                     </div>
                     <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-soft">
                       <span>👤 {r.customerName} · {r.phone}</span>
@@ -211,6 +268,16 @@ export default function AdminPage() {
                     <p className="text-xs text-ink-soft">예약금 / 총액</p>
                     <p className="font-bold text-brand">{formatKRW(r.deposit ?? 0)}</p>
                     <p className="text-xs text-ink-soft">{formatKRW(r.price)}</p>
+                    {r.agreedPrice != null && (
+                      <p className="mt-1 text-xs font-bold text-emerald-600">
+                        협의가 {formatKRW(r.agreedPrice)}
+                      </p>
+                    )}
+                    {r.partnerQuote != null && (
+                      <p className="text-[11px] text-sky-600">
+                        업체 견적 {formatKRW(r.partnerQuote)}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -232,7 +299,88 @@ export default function AdminPage() {
                       {STATUS_META[s].label}
                     </button>
                   ))}
+                  <button
+                    onClick={() => setOpenId(isOpen ? null : r.id)}
+                    className="ml-auto rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-cream transition hover:opacity-90"
+                  >
+                    {isOpen ? "관리 닫기" : "업체 배정·가격·소통"}
+                  </button>
                 </div>
+
+                {/* 업체 배정 · 협의 가격 · 소통 */}
+                {isOpen && (
+                  <div className="mt-3 space-y-3 border-t border-line pt-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-bold text-ink-soft">
+                          담당 업체 배정
+                        </label>
+                        <select
+                          value={r.partnerId}
+                          disabled={updating === r.id}
+                          onChange={(e) => patchReservation(r.id, { partnerId: e.target.value })}
+                          className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink outline-none focus:border-brand"
+                        >
+                          {!partnerOptions.some((p) => p.id === r.partnerId) && (
+                            <option value={r.partnerId}>{r.partnerId} (미등록)</option>
+                          )}
+                          {partnerOptions.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        {r.partnerQuote != null && (
+                          <p className="mt-1 text-xs text-sky-600">
+                            🧾 업체 제안가 {formatKRW(r.partnerQuote)}
+                            {r.partnerQuoteNote && ` · ${r.partnerQuoteNote}`}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-bold text-ink-soft">
+                          협의 확정가 (원)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            inputMode="numeric"
+                            value={priceDraft[r.id] ?? ""}
+                            onChange={(e) =>
+                              setPriceDraft((d) => ({
+                                ...d,
+                                [r.id]: e.target.value.replace(/[^\d]/g, ""),
+                              }))
+                            }
+                            placeholder="예) 180000"
+                            className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand"
+                          />
+                          <button
+                            onClick={() => saveAgreedPrice(r.id)}
+                            disabled={updating === r.id}
+                            className="shrink-0 rounded-xl bg-brand px-4 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-40"
+                          >
+                            저장
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <MessageThread
+                      type="reservation"
+                      id={r.id}
+                      audience="partner"
+                      me="admin"
+                      title="🏢 업체와 소통 (배정 업체만 열람)"
+                    />
+                    <MessageThread
+                      type="reservation"
+                      id={r.id}
+                      audience="customer"
+                      me="admin"
+                      title="👤 고객과 소통 (로그인 고객만 열람)"
+                    />
+                  </div>
+                )}
               </div>
             );
           })}

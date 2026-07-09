@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import MessageThread from "@/components/MessageThread";
 import {
   CONSULTATION_STATUS_META,
+  PARTNERS,
   serviceById,
   formatKRW,
   type ConsultationStatus,
@@ -23,7 +25,10 @@ type Consultation = {
   status: ConsultationStatus;
   quotedPrice: number | null;
   quoteNote: string;
+  partnerId: string;
 };
+
+type AssignablePartner = { id: string; name: string };
 
 const STATUS_ORDER: ConsultationStatus[] = [
   "requested",
@@ -47,6 +52,13 @@ export default function AdminCustomersPage() {
     Record<string, { price: string; note: string }>
   >({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [approved, setApproved] = useState<AssignablePartner[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const partnerOptions: AssignablePartner[] = useMemo(
+    () => [...PARTNERS.map((p) => ({ id: p.id, name: p.name })), ...approved],
+    [approved]
+  );
 
   async function load() {
     setLoading(true);
@@ -75,6 +87,17 @@ export default function AdminCustomersPage() {
 
   useEffect(() => {
     load();
+    fetch("/api/partners", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) =>
+        setApproved(
+          (d.partners ?? []).map((p: { id: string; companyName: string }) => ({
+            id: p.id,
+            name: p.companyName,
+          }))
+        )
+      )
+      .catch(() => setApproved([]));
   }, []);
 
   function setDraft(id: string, patch: Partial<{ price: string; note: string }>) {
@@ -87,6 +110,7 @@ export default function AdminCustomersPage() {
       status?: ConsultationStatus;
       quotedPrice?: number | null;
       quoteNote?: string;
+      partnerId?: string;
     }
   ) {
     setBusy(id);
@@ -356,7 +380,52 @@ export default function AdminCustomersPage() {
                       {CONSULTATION_STATUS_META[s].label}
                     </button>
                   ))}
+                  <button
+                    onClick={() => setOpenId(openId === r.id ? null : r.id)}
+                    className="ml-auto rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-cream transition hover:opacity-90"
+                  >
+                    {openId === r.id ? "관리 닫기" : "업체 배정·소통"}
+                  </button>
                 </div>
+
+                {/* 업체 배정 · 소통 */}
+                {openId === r.id && (
+                  <div className="mt-3 space-y-3 border-t border-line pt-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-ink-soft">
+                        담당 업체 배정
+                      </label>
+                      <select
+                        value={r.partnerId}
+                        disabled={busy === r.id}
+                        onChange={(e) => patch(r.id, { partnerId: e.target.value })}
+                        className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink outline-none focus:border-brand sm:max-w-xs"
+                      >
+                        <option value="">미배정</option>
+                        {partnerOptions.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <MessageThread
+                      type="consultation"
+                      id={r.id}
+                      audience="partner"
+                      me="admin"
+                      title="🏢 업체와 소통 (배정 업체만 열람)"
+                    />
+                    <MessageThread
+                      type="consultation"
+                      id={r.id}
+                      audience="customer"
+                      me="admin"
+                      title="👤 고객과 소통 (로그인 고객만 열람)"
+                    />
+                  </div>
+                )}
               </div>
             );
           })}

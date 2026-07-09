@@ -2,15 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateApplication, readAllApplications } from "@/lib/applicationStore";
 import { APPLICATION_STATUS_META, type ApplicationStatus } from "@/lib/data";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
+import { getRequestUser } from "@/lib/appAuth";
 
 const VALID = Object.keys(APPLICATION_STATUS_META) as ApplicationStatus[];
 
-// PATCH /api/applications/[id] → 심사 상태/사유 변경 (운영자 전용)
+// PATCH /api/applications/[id] → 심사 상태/사유 변경 (운영자 전용, 웹 쿠키 또는 앱 Bearer)
 export async function PATCH(
   request: NextRequest,
   ctx: RouteContext<"/api/applications/[id]">
 ) {
-  const admin = await getCurrentUser();
+  const admin = await getRequestUser(request);
   if (!admin || !isAdminEmail(admin.email)) {
     return NextResponse.json({ error: "권한이 없어요." }, { status: 403 });
   }

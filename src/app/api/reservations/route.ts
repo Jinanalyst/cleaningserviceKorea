@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createReservation, readAll, readByUser } from "@/lib/store";
-import { getCurrentUser, isAdminEmail } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/auth";
 import { getRequestUser } from "@/lib/appAuth";
 import {
   DEPOSIT,
@@ -46,8 +46,8 @@ function sanitizeProperty(
 //  - 관리자: 전체 예약
 //  - 로그인 사용자: 본인 예약만
 //  - 비로그인: 401
-export async function GET() {
-  const user = await getCurrentUser();
+export async function GET(request: NextRequest) {
+  const user = await getRequestUser(request);
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
   }

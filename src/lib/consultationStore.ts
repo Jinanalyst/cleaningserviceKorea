@@ -21,6 +21,7 @@ export type Consultation = {
   quotedPrice: number | null; // 합의된 견적 금액 (운영자 입력)
   quoteNote: string; // 견적/상담 메모 (운영자 입력)
   userId: string | null; // 연결된 로그인 계정 (구글 로그인 고객)
+  partnerId: string; // 배정 업체 (관리자 입력, 없으면 빈 문자열)
 };
 
 type Row = {
@@ -38,6 +39,7 @@ type Row = {
   quoted_price: number | null;
   quote_note: string | null;
   user_id: string | null;
+  partner_id: string | null;
 };
 
 function fromRow(r: Row): Consultation {
@@ -56,6 +58,7 @@ function fromRow(r: Row): Consultation {
     quotedPrice: r.quoted_price ?? null,
     quoteNote: r.quote_note ?? "",
     userId: r.user_id ?? null,
+    partnerId: r.partner_id ?? "",
   };
 }
 
@@ -78,7 +81,7 @@ export async function readAllConsultations(): Promise<Consultation[]> {
 export async function createConsultation(
   input: Omit<
     Consultation,
-    "id" | "createdAt" | "status" | "quotedPrice" | "quoteNote"
+    "id" | "createdAt" | "status" | "quotedPrice" | "quoteNote" | "partnerId"
   >
 ): Promise<Consultation> {
   const supabase = getSupabase();
@@ -116,12 +119,14 @@ export async function updateConsultation(
     status?: ConsultationStatus;
     quotedPrice?: number | null;
     quoteNote?: string;
+    partnerId?: string;
   }
 ): Promise<Consultation | null> {
   const fields: Record<string, unknown> = {};
   if (patch.status) fields.status = patch.status;
   if (patch.quotedPrice !== undefined) fields.quoted_price = patch.quotedPrice;
   if (patch.quoteNote !== undefined) fields.quote_note = patch.quoteNote;
+  if (patch.partnerId !== undefined) fields.partner_id = patch.partnerId;
 
   const { data, error } = await getSupabase()
     .from(TABLE)
@@ -132,6 +137,19 @@ export async function updateConsultation(
   if (error) throw new Error(error.message);
   if (!data) return null;
   return fromRow(data as Row);
+}
+
+// 상담 코드로 단건 조회 (소통 스레드 권한 검증 등에 사용)
+export async function readConsultationById(
+  id: string
+): Promise<Consultation | null> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? fromRow(data as Row) : null;
 }
 
 // 특정 로그인 계정이 낸 상담 신청만 조회 (개인정보 보호)

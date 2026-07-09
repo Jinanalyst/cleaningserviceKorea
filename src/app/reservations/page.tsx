@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import MessageThread from "@/components/MessageThread";
 import {
   STATUS_META,
   STATUS_FLOW,
@@ -32,6 +33,7 @@ type Reservation = {
   price: number;
   deposit: number;
   status: ReservationStatus;
+  agreedPrice: number | null;
 };
 
 function formatDateKo(key: string) {
@@ -190,7 +192,10 @@ function ReservationCard({ r }: { r: Reservation }) {
           <Info k="방문 일시" v={`${formatDateKo(r.date)} ${r.timeSlot}`} />
           <Info k="예약자" v={`${r.customerName}`} />
           <Info k="주소" v={`${r.address} ${r.addressDetail}`.trim()} />
-          <Info k="청소 총액" v="상담 후 협의" />
+          <Info
+            k="청소 총액"
+            v={r.agreedPrice != null ? formatKRW(r.agreedPrice) : "상담 후 협의"}
+          />
         </dl>
 
         <div className="mt-5 flex items-center justify-between rounded-2xl bg-brand-50 px-5 py-4">
@@ -200,9 +205,22 @@ function ReservationCard({ r }: { r: Reservation }) {
           </div>
           <div className="text-right">
             <p className="text-xs text-ink-soft">현장 잔금</p>
-            <p className="font-bold text-ink">상담 후 협의</p>
+            <p className="font-bold text-ink">
+              {r.agreedPrice != null
+                ? formatKRW(Math.max(0, r.agreedPrice - (r.deposit ?? DEPOSIT)))
+                : "상담 후 협의"}
+            </p>
           </div>
         </div>
+
+        {/* 운영팀과 소통 (전화·카카오와 별개로 기록이 남는 채널) */}
+        <MessageThread
+          type="reservation"
+          id={r.id}
+          audience="customer"
+          me="customer"
+          title="💬 손길 운영팀과 소통"
+        />
 
         {/* 청소가 완료되면 후기 작성 */}
         {r.status === "completed" && (

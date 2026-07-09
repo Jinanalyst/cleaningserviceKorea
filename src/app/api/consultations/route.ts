@@ -6,13 +6,14 @@ import {
 } from "@/lib/consultationStore";
 import { serviceById } from "@/lib/data";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
+import { getRequestUser } from "@/lib/appAuth";
 
 // GET /api/consultations
 //  - 관리자: 전체 상담 신청 (고객 관리용)
 //  - 로그인 사용자: 본인 신청만
 //  - 비로그인: 401
-export async function GET() {
-  const user = await getCurrentUser();
+export async function GET(request: NextRequest) {
+  const user = await getRequestUser(request);
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
   }

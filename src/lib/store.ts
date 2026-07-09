@@ -25,6 +25,9 @@ export type Reservation = {
   paymentStatus: "paid"; // 목업: 항상 결제 완료로 생성
   status: ReservationStatus;
   userId: string | null; // 예약한 로그인 계정 (비로그인 예약은 null)
+  agreedPrice: number | null; // 관리자가 확정한 협의 가격 (없으면 null)
+  partnerQuote: number | null; // 배정 업체가 앱에서 보낸 견적 (없으면 null)
+  partnerQuoteNote: string; // 업체 견적 메모
 };
 
 // DB 행(snake_case) → Reservation(camelCase)
@@ -47,6 +50,9 @@ type Row = {
   payment_status: string;
   status: ReservationStatus;
   user_id: string | null;
+  agreed_price: number | null;
+  partner_quote: number | null;
+  partner_quote_note: string | null;
 };
 
 function fromRow(r: Row): Reservation {
@@ -69,6 +75,9 @@ function fromRow(r: Row): Reservation {
     paymentStatus: "paid",
     status: r.status,
     userId: r.user_id ?? null,
+    agreedPrice: r.agreed_price ?? null,
+    partnerQuote: r.partner_quote ?? null,
+    partnerQuoteNote: r.partner_quote_note ?? "",
   };
 }
 
@@ -89,7 +98,16 @@ export async function readAll(): Promise<Reservation[]> {
 }
 
 export async function createReservation(
-  input: Omit<Reservation, "id" | "createdAt" | "status" | "paymentStatus">
+  input: Omit<
+    Reservation,
+    | "id"
+    | "createdAt"
+    | "status"
+    | "paymentStatus"
+    | "agreedPrice"
+    | "partnerQuote"
+    | "partnerQuoteNote"
+  >
 ): Promise<Reservation> {
   const supabase = getSupabase();
 
@@ -127,13 +145,48 @@ export async function createReservation(
   throw new Error("예약 코드 생성에 실패했어요. 다시 시도해 주세요.");
 }
 
+// 예약 갱신 — 상태·업체배정·협의가(관리자) 를 한 번에 처리.
+export async function updateReservation(
+  id: string,
+  patch: {
+    status?: ReservationStatus;
+    partnerId?: string;
+    agreedPrice?: number | null;
+  }
+): Promise<Reservation | null> {
+  const fields: Record<string, unknown> = {};
+  if (patch.status) fields.status = patch.status;
+  if (patch.partnerId) fields.partner_id = patch.partnerId;
+  if (patch.agreedPrice !== undefined) fields.agreed_price = patch.agreedPrice;
+
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .update(fields)
+    .eq("id", id)
+    .select("*")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return fromRow(data as Row);
+}
+
+// 상태만 변경 (기존 호출 호환).
 export async function updateStatus(
   id: string,
   status: ReservationStatus
 ): Promise<Reservation | null> {
+  return updateReservation(id, { status });
+}
+
+// 배정 업체가 앱에서 보낸 견적을 서버에 기록 (파트너 견적 동기화).
+export async function setPartnerQuote(
+  id: string,
+  amount: number,
+  memo: string
+): Promise<Reservation | null> {
   const { data, error } = await getSupabase()
     .from(TABLE)
-    .update({ status })
+    .update({ partner_quote: amount, partner_quote_note: memo })
     .eq("id", id)
     .select("*")
     .maybeSingle();

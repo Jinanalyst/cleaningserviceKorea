@@ -211,3 +211,39 @@ values
    'office', 60, '평일 오전', '사무실 정기청소 상담 원합니다. 세금계산서 필요.',
    'quoted', 420000, '대면 상담 완료. 주 1회 정기 계약 기준 회당 42만원 합의. 첫 방문 7/8 오전 8시.')
 on conflict (id) do nothing;
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 운영 허브 확장 (2026-07): 업체·고객 소통 + 협의 가격 + 업체 배정
+--   아래 블록을 Supabase SQL Editor 에 붙여넣고 "Run" 하세요.
+--   실행 전에는 소통/견적 동기화 기능이 동작하지 않습니다.
+-- ══════════════════════════════════════════════════════════════
+
+-- 관리자↔업체 / 관리자↔고객 소통 스레드.
+--   예약·상담 건마다 audience(partner|customer) 채널로 메시지를 남긴다.
+create table if not exists public.messages (
+  id           uuid primary key default gen_random_uuid(),
+  created_at   timestamptz not null default now(),
+  thread_type  text not null,                       -- 'reservation' | 'consultation'
+  thread_id    text not null,                       -- 예약(SG-..)/상담(CS-..) 코드
+  audience     text not null,                       -- 'partner'(관리자↔업체) | 'customer'(관리자↔고객)
+  sender       text not null,                       -- 'admin' | 'partner' | 'customer'
+  sender_name  text default '',                     -- 표시용 발신자명
+  body         text not null
+);
+
+create index if not exists messages_thread_idx
+  on public.messages (thread_type, thread_id, audience, created_at);
+
+-- RLS 활성화 (정책 없음 = service_role 키로만 접근, 브라우저 anon 접근 차단)
+alter table public.messages enable row level security;
+
+-- 예약: 협의 확정가 + 업체가 앱에서 보낸 견적(서버 동기화)
+alter table public.reservations
+  add column if not exists agreed_price       integer,             -- 관리자가 확정한 협의 가격
+  add column if not exists partner_quote      integer,             -- 배정 업체가 앱에서 보낸 견적
+  add column if not exists partner_quote_note text default '';     -- 업체 견적 메모
+
+-- 상담: 업체 배정 (협의가는 기존 quoted_price 사용)
+alter table public.consultations
+  add column if not exists partner_id text default '';

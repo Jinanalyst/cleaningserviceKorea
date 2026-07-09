@@ -3,18 +3,20 @@ import {
   updateConsultation,
   readAllConsultations,
 } from "@/lib/consultationStore";
-import { CONSULTATION_STATUS_META, type ConsultationStatus } from "@/lib/data";
+import { CONSULTATION_STATUS_META, PARTNERS, type ConsultationStatus } from "@/lib/data";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
+import { getRequestUser } from "@/lib/appAuth";
+import { readApprovedPartners } from "@/lib/applicationStore";
 
 const VALID = Object.keys(CONSULTATION_STATUS_META) as ConsultationStatus[];
 
 // PATCH /api/consultations/[id]
-//  → 상담 상태 변경 + 합의 견적(금액/메모) 입력 (운영자 전용)
+//  → 상담 상태 변경 + 합의 견적(금액/메모) + 업체 배정 (운영자 전용, 웹 쿠키 또는 앱 Bearer)
 export async function PATCH(
   request: NextRequest,
   ctx: RouteContext<"/api/consultations/[id]">
 ) {
-  const admin = await getCurrentUser();
+  const admin = await getRequestUser(request);
   if (!admin || !isAdminEmail(admin.email)) {
     return NextResponse.json({ error: "권한이 없어요." }, { status: 403 });
   }
@@ -24,6 +26,7 @@ export async function PATCH(
     status?: string;
     quotedPrice?: number | null;
     quoteNote?: string;
+    partnerId?: string;
   };
   try {
     body = await request.json();
@@ -55,10 +58,27 @@ export async function PATCH(
     }
   }
 
+  // 업체 배정 (선택, "" = 배정 해제) — 시드 파트너 또는 승인된 신규 파트너만 허용
+  let partnerId: string | undefined = undefined;
+  if (body.partnerId !== undefined) {
+    const pid = String(body.partnerId).trim();
+    if (pid === "") {
+      partnerId = "";
+    } else {
+      const seedOk = PARTNERS.some((p) => p.id === pid);
+      const approved = seedOk ? [] : await readApprovedPartners();
+      if (!seedOk && !approved.some((p) => p.id === pid)) {
+        return NextResponse.json({ error: "배정할 수 없는 업체입니다." }, { status: 400 });
+      }
+      partnerId = pid;
+    }
+  }
+
   const updated = await updateConsultation(id, {
     status: body.status as ConsultationStatus | undefined,
     quotedPrice,
     quoteNote: body.quoteNote,
+    partnerId,
   });
   if (!updated) {
     return NextResponse.json({ error: "상담 신청을 찾을 수 없습니다." }, { status: 404 });
