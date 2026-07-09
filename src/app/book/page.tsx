@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Calendar from "@/components/Calendar";
+import Calendar, { type DateStatus } from "@/components/Calendar";
 import { KakaoConsultButton } from "@/components/KakaoConsult";
 import {
   PARTNERS,
@@ -83,9 +83,81 @@ export default function BookPage() {
   const [agreePolicy, setAgreePolicy] = useState(false);
   const allAgreed = agreeDeposit && agreeTotal && agreePolicy;
 
+  // 예약 가능한 최소 날짜 = 오늘 + 3일 (당일·긴급 예약 제외) — 모바일 앱과 동일
+  const minDate = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3);
+    return d;
+  }, []);
+
+  // 예약 현황(이미 예약된 슬롯) — 캘린더/시간대 마감 표시용 (모바일 앱과 동일)
+  const [booked, setBooked] = useState<
+    { date: string; timeSlot: string; partnerId: string }[]
+  >([]);
+  useEffect(() => {
+    fetch("/api/availability")
+      .then((r) => r.json())
+      .then((d) => setBooked(d?.slots ?? []))
+      .catch(() => setBooked([]));
+  }, []);
+
+  // 업체+날짜별 예약된 시간대 Set
+  const bookedByPartnerDate = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    booked.forEach((s) => {
+      const k = `${s.partnerId}|${s.date}`;
+      if (!m.has(k)) m.set(k, new Set());
+      m.get(k)!.add(s.timeSlot);
+    });
+    return m;
+  }, [booked]);
+  // 날짜별 전체 예약 슬롯(업체·시간) Set — 업체 미지정(자동배정) 시 집계용
+  const bookedByDateAll = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    booked.forEach((s) => {
+      if (!m.has(s.date)) m.set(s.date, new Set());
+      m.get(s.date)!.add(`${s.partnerId}|${s.timeSlot}`);
+    });
+    return m;
+  }, [booked]);
+
   const svc = serviceById(serviceId);
   const category = svc?.category;
   const pyNum = Number(pyeong) || 0;
+
+  // 날짜별 예약 가능 상태(여유/일부/마감) — 업체 지정 시 해당 업체 기준, 자동배정 시 전체 기준
+  function dateStatus(dateStr: string): DateStatus {
+    const slots = TIME_SLOTS.length;
+    if (partnerId) {
+      const b = bookedByPartnerDate.get(`${partnerId}|${dateStr}`)?.size ?? 0;
+      if (b >= slots) return "full";
+      return b > 0 ? "some" : "open";
+    }
+    const cap = PARTNERS.length * slots;
+    const b = bookedByDateAll.get(dateStr)?.size ?? 0;
+    if (b >= cap) return "full";
+    return b > 0 ? "some" : "open";
+  }
+
+  // 선택한 날짜에서 해당 시간대가 마감인지 — 자동배정은 모든 업체가 찼을 때만 마감
+  function isSlotBooked(t: string): boolean {
+    if (!date) return false;
+    if (partnerId) {
+      return bookedByPartnerDate.get(`${partnerId}|${date}`)?.has(t) ?? false;
+    }
+    let cnt = 0;
+    for (const p of PARTNERS) {
+      if (bookedByPartnerDate.get(`${p.id}|${date}`)?.has(t)) cnt++;
+    }
+    return cnt >= PARTNERS.length;
+  }
+
+  // 업체/날짜 변경 시 선택한 시간이 마감이면 해제 (모바일 앱과 동일)
+  useEffect(() => {
+    if (timeSlot && isSlotBooked(timeSlot)) setTimeSlot("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partnerId, date, booked]);
 
   // 실시간 견적 (기본견적 × 난이도 × 주거유형 × 일정 + 옵션비)
   const est = computeEstimate({
@@ -446,26 +518,43 @@ export default function BookPage() {
           {step === 1 && (
             <div className="animate-rise space-y-8">
               <Field title="언제 방문할까요?">
-                <Calendar value={date} onChange={setDate} />
+                <Calendar
+                  value={date}
+                  onChange={setDate}
+                  minDate={minDate}
+                  dateStatus={dateStatus}
+                />
               </Field>
               <Field title="방문 시간대">
                 <div className="flex flex-wrap gap-2">
-                  {TIME_SLOTS.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTimeSlot(t)}
-                      className={[
-                        "rounded-xl border px-5 py-3 text-sm font-bold transition",
-                        timeSlot === t
-                          ? "border-brand bg-brand text-white"
-                          : "border-line bg-white text-ink hover:border-brand-200",
-                      ].join(" ")}
-                    >
-                      {t}
-                    </button>
-                  ))}
+                  {TIME_SLOTS.map((t) => {
+                    const sold = isSlotBooked(t);
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        disabled={sold}
+                        onClick={() => !sold && setTimeSlot(t)}
+                        className={[
+                          "rounded-xl border px-5 py-3 text-sm font-bold transition",
+                          timeSlot === t
+                            ? "border-brand bg-brand text-white"
+                            : sold
+                              ? "cursor-not-allowed border-line bg-cream text-ink-soft/40 line-through"
+                              : "border-line bg-white text-ink hover:border-brand-200",
+                        ].join(" ")}
+                      >
+                        {t}
+                        {sold ? " 마감" : ""}
+                      </button>
+                    );
+                  })}
                 </div>
+                {!date && (
+                  <p className="mt-2 text-xs text-ink-soft">
+                    날짜를 먼저 선택하면 예약 가능한 시간이 표시돼요.
+                  </p>
+                )}
               </Field>
             </div>
           )}
