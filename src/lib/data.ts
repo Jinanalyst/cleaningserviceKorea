@@ -322,17 +322,24 @@ export const COMPANY = {
   mailOrderNumber: "준비 중", // 통신판매업 신고번호
   tel: "050-6990-8359", // 고객센터
   kakao: "http://pf.kakao.com/_BTrPX/chat", // 카카오톡 상담 채널
-  email: "jangj6091@gmail.com", // 이메일
+  email: "chainlabsofficial@handway.net", // 이메일
   hours: "평일 09:00 - 18:00", // 운영시간
-  domain: "handway.online", // 도메인
+  domain: "handway.net", // 도메인
   address: "여수울로 50 연꽃마을4단지아파트 406-403", // 주소
 } as const;
+
+// 서비스 대표 도메인(canonical/SEO/OG 기준). Vercel에 다른 도메인을 붙일 땐
+// NEXT_PUBLIC_SITE_URL 환경변수로 덮어쓸 수 있음. handway.online 도 함께 연결되지만
+// 검색엔진 기준(canonical)은 handway.net 하나로 통일한다.
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://handway.net"
+).replace(/\/$/, "");
 
 // 모바일 앱(안드로이드) 다운로드 정보 — /app 페이지·홈 다운로드 섹션에서 사용.
 // apk 파일은 public/ 에 위치. 새 버전 배포 시 앱을 재빌드해 public/songil-app.apk 교체.
 export const APP = {
   apk: "/songil-app.apk",
-  version: "1.0.3",
+  version: "1.0.5",
   androidReady: true,
   iosReady: false,
 } as const;

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Link from "next/link";
 import AuthButtons from "@/components/AuthButtons";
-import { COMPANY } from "@/lib/data";
+import { COMPANY, SITE_URL } from "@/lib/data";
 import "./globals.css";
 
 const noto = Noto_Sans_KR({
@@ -12,10 +12,29 @@ const noto = Noto_Sans_KR({
   display: "swap",
 });
 
+const DESCRIPTION =
+  "검증된 청소 업체를 연결해 드리는 청소 중개 플랫폼. 날짜만 고르면 예약금 3만원으로 예약 완료.";
+
+// metadataBase 를 지정하면 canonical·OG·트위터 카드의 상대경로가 대표 도메인
+// (SITE_URL, 기본 https://handway.net) 기준 절대 URL 로 자동 변환된다.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "손길 — 믿을 수 있는 청소, 사람이 이어드려요",
-  description:
-    "검증된 청소 업체를 연결해 드리는 청소 중개 플랫폼. 날짜만 고르면 예약금 3만원으로 예약 완료.",
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "손길",
+    url: "/",
+    title: "손길 — 믿을 수 있는 청소, 사람이 이어드려요",
+    description: DESCRIPTION,
+    locale: "ko_KR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "손길 — 믿을 수 있는 청소, 사람이 이어드려요",
+    description: DESCRIPTION,
+  },
 };
 
 function Logo() {
