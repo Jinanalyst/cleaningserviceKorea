@@ -10,6 +10,7 @@ import {
   type PropertyInfo,
 } from "@/lib/data";
 import { computeEstimate, platformFee } from "@/lib/pricing";
+import { accrueForReservation, normalizeCode } from "@/lib/referralStore";
 
 // 서비스 성격에 맞게 집/회사/부분청소 정보를 정리한다.
 function sanitizeProperty(
@@ -147,7 +148,21 @@ export async function POST(request: NextRequest) {
     price,
     deposit: platformFee(price), // 손길 수수료 = 견적의 7%
     userId: user?.id ?? null,
+    referrerCode: normalizeCode(body.ref), // 추천 링크 유입 코드
+    // 무통장 입금 대조용: 입금자명(기본=예약자 성함) + 입금 메모
+    depositorName:
+      typeof body.depositorName === "string" && body.depositorName.trim()
+        ? body.depositorName.trim()
+        : customerName.trim(),
+    feeMemo: typeof body.feeMemo === "string" ? body.feeMemo.trim() : "",
   });
+
+  // 추천 적립(첫 예약 1회) — 실패해도 예약 자체는 성공 처리.
+  try {
+    await accrueForReservation(reservation);
+  } catch {
+    /* noop */
+  }
 
   return NextResponse.json({ reservation }, { status: 201 });
 }

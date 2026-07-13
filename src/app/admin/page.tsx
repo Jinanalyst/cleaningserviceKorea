@@ -6,6 +6,7 @@ import MessageThread from "@/components/MessageThread";
 import {
   STATUS_META,
   PARTNERS,
+  DEPOSIT_ACCOUNT,
   serviceById,
   formatKRW,
   formatProperty,
@@ -34,6 +35,10 @@ type Reservation = {
   agreedPrice: number | null;
   partnerQuote: number | null;
   partnerQuoteNote: string;
+  depositorName: string;
+  feeMemo: string;
+  feePaid: boolean;
+  feePaidAt: string | null;
 };
 
 type AssignablePartner = { id: string; name: string };
@@ -59,6 +64,10 @@ export default function AdminPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [approved, setApproved] = useState<AssignablePartner[]>([]);
   const [priceDraft, setPriceDraft] = useState<Record<string, string>>({});
+  // 입금자명·입금 메모 편집 초안 (예약별)
+  const [feeDraft, setFeeDraft] = useState<
+    Record<string, { depositor: string; memo: string }>
+  >({});
   const [openId, setOpenId] = useState<string | null>(null);
 
   // 배정 가능한 업체 = 기본 시드 파트너 + 심사 승인된 신규 파트너
@@ -87,6 +96,15 @@ export default function AdminPage() {
         }
         return next;
       });
+      setFeeDraft((prev) => {
+        const next = { ...prev };
+        for (const r of list) {
+          if (next[r.id] === undefined) {
+            next[r.id] = { depositor: r.depositorName ?? "", memo: r.feeMemo ?? "" };
+          }
+        }
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -110,7 +128,14 @@ export default function AdminPage() {
 
   async function patchReservation(
     id: string,
-    body: { status?: ReservationStatus; partnerId?: string; agreedPrice?: number | null }
+    body: {
+      status?: ReservationStatus;
+      partnerId?: string;
+      agreedPrice?: number | null;
+      feePaid?: boolean;
+      depositorName?: string;
+      feeMemo?: string;
+    }
   ) {
     setUpdating(id);
     try {
@@ -137,6 +162,21 @@ export default function AdminPage() {
   function saveAgreedPrice(id: string) {
     const digits = (priceDraft[id] ?? "").replace(/[^\d]/g, "");
     patchReservation(id, { agreedPrice: digits ? Number(digits) : null });
+  }
+
+  // 예약금(수수료) 입금 확인 토글
+  function toggleFeePaid(id: string, next: boolean) {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, feePaid: next } : r)));
+    patchReservation(id, { feePaid: next });
+  }
+
+  // 입금자명·입금 메모 저장
+  function saveFeeInfo(id: string) {
+    const d = feeDraft[id] ?? { depositor: "", memo: "" };
+    patchReservation(id, {
+      depositorName: d.depositor.trim(),
+      feeMemo: d.memo.trim(),
+    });
   }
 
   const stats = useMemo(() => {
@@ -188,6 +228,12 @@ export default function AdminPage() {
           className="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink-soft ring-1 ring-line transition hover:bg-cream-deep"
         >
           고객 관리
+        </Link>
+        <Link
+          href="/admin/referrals"
+          className="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink-soft ring-1 ring-line transition hover:bg-cream-deep"
+        >
+          추천 정산
         </Link>
       </div>
 
@@ -307,6 +353,36 @@ export default function AdminPage() {
                   </button>
                 </div>
 
+                {/* 예약금(수수료 7%) 입금 확인 — 항상 표시 */}
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-cream px-3 py-2 text-sm">
+                  <span className="font-bold text-ink">
+                    💳 예약금 {formatKRW(r.deposit ?? 0)}
+                  </span>
+                  {r.depositorName && (
+                    <span className="text-ink-soft">· 입금자 {r.depositorName}</span>
+                  )}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                      r.feePaid
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {r.feePaid ? "입금 확인됨" : "입금 미확인"}
+                  </span>
+                  <button
+                    onClick={() => toggleFeePaid(r.id, !r.feePaid)}
+                    disabled={updating === r.id}
+                    className={`ml-auto rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-40 ${
+                      r.feePaid
+                        ? "bg-white text-ink-soft ring-1 ring-line hover:bg-cream-deep"
+                        : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    }`}
+                  >
+                    {r.feePaid ? "입금 확인 취소" : "입금 확인"}
+                  </button>
+                </div>
+
                 {/* 업체 배정 · 협의 가격 · 소통 */}
                 {isOpen && (
                   <div className="mt-3 space-y-3 border-t border-line pt-3">
@@ -363,6 +439,70 @@ export default function AdminPage() {
                           </button>
                         </div>
                       </div>
+                    </div>
+
+                    {/* 예약금 입금(수수료 7%) — 체인랩스 계좌 · 입금자 · 메모 */}
+                    <div className="rounded-xl border border-line bg-cream/40 p-3">
+                      <p className="text-xs font-bold text-ink-soft">예약금 입금 (수수료 7%)</p>
+                      <p className="mt-1 text-sm text-ink">
+                        {DEPOSIT_ACCOUNT.bank} {DEPOSIT_ACCOUNT.number} · 예금주{" "}
+                        {DEPOSIT_ACCOUNT.holder}
+                      </p>
+                      <p className="text-sm font-bold text-brand">
+                        입금 금액 {formatKRW(r.deposit ?? 0)}
+                        {r.feePaidAt && (
+                          <span className="ml-2 text-xs font-normal text-ink-soft">
+                            확인 {new Date(r.feePaidAt).toLocaleString("ko-KR")}
+                          </span>
+                        )}
+                      </p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-1 block text-xs font-bold text-ink-soft">
+                            입금자명 (통장 대조)
+                          </label>
+                          <input
+                            value={feeDraft[r.id]?.depositor ?? ""}
+                            onChange={(e) =>
+                              setFeeDraft((d) => ({
+                                ...d,
+                                [r.id]: {
+                                  depositor: e.target.value,
+                                  memo: d[r.id]?.memo ?? "",
+                                },
+                              }))
+                            }
+                            placeholder="통장에 찍힌 이름"
+                            className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink outline-none focus:border-brand"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-bold text-ink-soft">
+                            입금 메모
+                          </label>
+                          <input
+                            value={feeDraft[r.id]?.memo ?? ""}
+                            onChange={(e) =>
+                              setFeeDraft((d) => ({
+                                ...d,
+                                [r.id]: {
+                                  depositor: d[r.id]?.depositor ?? "",
+                                  memo: e.target.value,
+                                },
+                              }))
+                            }
+                            placeholder="예) 7/13 15:20 입금 확인"
+                            className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink outline-none focus:border-brand"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => saveFeeInfo(r.id)}
+                        disabled={updating === r.id}
+                        className="mt-2 rounded-full bg-ink px-4 py-1.5 text-xs font-bold text-cream transition hover:opacity-90 disabled:opacity-40"
+                      >
+                        입금자·메모 저장
+                      </button>
                     </div>
 
                     <MessageThread

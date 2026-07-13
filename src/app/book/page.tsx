@@ -14,11 +14,13 @@ import {
   SPACE_TYPES,
   PARTIAL_AREAS,
   PAYMENT_NOTICE,
+  DEPOSIT_ACCOUNT,
   formatKRW,
   partnerById,
   serviceById,
 } from "@/lib/data";
 import { DIFFICULTY, OPTIONS, computeEstimate, platformFee } from "@/lib/pricing";
+import { getStoredRef } from "@/lib/ref";
 
 type Step = 0 | 1 | 2 | 3 | 4;
 const STEP_LABELS = ["서비스", "날짜·시간", "정보 입력", "예약금 결제"];
@@ -72,9 +74,10 @@ export default function BookPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ id: string } | null>(null);
 
-  // 결제 수단
-  const [payMethod, setPayMethod] = useState<"transfer" | "card">("transfer");
+  // 결제 = 무통장 입금(체인랩스 계좌) 전용 — PG 연동 전까지 계좌이체만 받는다.
   const [copied, setCopied] = useState(false);
+  const [depositorName, setDepositorName] = useState(""); // 입금자명(통장 대조용, 비우면 예약자명)
+  const [feeMemo, setFeeMemo] = useState(""); // 입금 메모(선택)
 
   // 결제 전 필수 동의 (PG 심사 요건)
   const [agreeDeposit, setAgreeDeposit] = useState(false);
@@ -281,6 +284,9 @@ export default function BookPage() {
           property: buildProperty(),
           difficulty,
           options,
+          ref: getStoredRef(),
+          depositorName: depositorName.trim() || customerName,
+          feeMemo,
         }),
       });
       const data = await res.json();
@@ -302,13 +308,23 @@ export default function BookPage() {
           <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand-50 text-4xl">
             🎉
           </div>
-          <h1 className="mt-5 text-2xl font-black text-ink">예약이 확정됐어요!</h1>
+          <h1 className="mt-5 text-2xl font-black text-ink">예약 신청이 접수됐어요!</h1>
           <p className="mt-2 text-ink-soft">
-            예약금 {formatKRW(fee)} (견적의 7%) 결제가 완료됐어요.
+            아래 계좌로 예약금 {formatKRW(fee)} (견적의 7%)을 입금해 주세요.
             <br />
-            담당 업체를 배정한 뒤 문자로 알려드릴게요.
+            입금이 확인되면 담당 업체를 배정하고 문자로 알려드릴게요.
           </p>
-          <div className="mt-6 rounded-2xl bg-cream p-5 text-left">
+          <div className="mt-5 rounded-2xl border-2 border-brand bg-brand-50 p-4 text-left">
+            <p className="text-xs font-bold text-brand-700">입금 계좌</p>
+            <p className="mt-1 text-lg font-black tracking-tight text-ink">
+              {DEPOSIT_ACCOUNT.bank} {DEPOSIT_ACCOUNT.number}
+            </p>
+            <p className="text-xs text-ink-soft">예금주 {DEPOSIT_ACCOUNT.holder}</p>
+            <p className="mt-2 border-t border-brand-200 pt-2 text-sm font-bold text-brand">
+              입금 금액 {formatKRW(fee)}
+            </p>
+          </div>
+          <div className="mt-4 rounded-2xl bg-cream p-5 text-left">
             <Row k="예약 번호" v={confirmed.id} strong />
             <Row k="서비스" v={svc?.name ?? ""} />
             {propertySummaryText() && (
@@ -316,7 +332,7 @@ export default function BookPage() {
             )}
             <Row k="희망 업체" v={resolvedPartner?.name ?? ""} />
             <Row k="방문" v={`${date ? formatDateKo(date) : ""} ${timeSlot}`} />
-            <Row k="온라인 결제 (예약금·견적의 7%)" v={formatKRW(fee)} strong />
+            <Row k="입금하실 예약금 (견적의 7%)" v={formatKRW(fee)} strong />
             <Row k="청소 총액" v="방문·상담 후 협의" />
           </div>
           <p className="mt-4 rounded-xl bg-cream px-4 py-3 text-left text-xs leading-relaxed text-ink-soft">
@@ -874,94 +890,78 @@ export default function BookPage() {
                 </div>
               </Field>
 
-              {/* 결제 수단 선택 */}
-              <Field title="결제 수단">
-                <div className="space-y-2">
-                  {/* 무통장 입금 (토스뱅크) */}
-                  <label
-                    className={`block cursor-pointer rounded-2xl border-2 p-4 transition ${
-                      payMethod === "transfer"
-                        ? "border-brand bg-brand-50"
-                        : "border-line bg-white hover:border-brand-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="payMethod"
-                        value="transfer"
-                        checked={payMethod === "transfer"}
-                        onChange={() => setPayMethod("transfer")}
-                        className="h-4 w-4 accent-brand"
-                      />
-                      <span className="font-bold text-ink">무통장 입금 (계좌이체)</span>
-                      <span className="ml-auto rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-700">
-                        토스뱅크
-                      </span>
-                    </div>
-                    {payMethod === "transfer" && (
-                      <div className="mt-3 rounded-xl border border-line bg-white p-4">
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-sm text-ink-soft">예금주</span>
-                          <span className="font-bold text-ink">체인랩스</span>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between gap-3">
-                          <div>
-                            <span className="text-sm text-ink-soft">토스뱅크 </span>
-                            <span className="text-lg font-black tracking-tight text-ink">
-                              100261986907
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard
-                                ?.writeText("100261986907")
-                                .then(() => {
-                                  setCopied(true);
-                                  setTimeout(() => setCopied(false), 1500);
-                                })
-                                .catch(() => {});
-                            }}
-                            className="shrink-0 rounded-full border border-brand px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-50"
-                          >
-                            {copied ? "복사됨 ✓" : "계좌 복사"}
-                          </button>
-                        </div>
-                        <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-ink-soft">
-                          위 계좌로 예약금 <b>{formatKRW(fee)}</b>을 입금해 주세요.
-                          입금자명은 예약자 성함({customerName || "예약자명"})으로 부탁드립니다.
-                          입금이 확인되면 예약이 확정됩니다.
-                        </p>
-                      </div>
-                    )}
-                  </label>
+              {/* 결제 수단 — 무통장 입금(체인랩스 계좌) 전용 */}
+              <Field title="예약금 입금 (계좌이체)">
+                <div className="rounded-2xl border-2 border-brand bg-brand-50 p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-ink">무통장 입금 (계좌이체)</span>
+                    <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-xs font-bold text-brand-700">
+                      {DEPOSIT_ACCOUNT.bank}
+                    </span>
+                  </div>
 
-                  {/* 카드 · 간편결제 */}
-                  <label
-                    className={`block cursor-pointer rounded-2xl border-2 p-4 transition ${
-                      payMethod === "card"
-                        ? "border-brand bg-brand-50"
-                        : "border-line bg-white hover:border-brand-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="payMethod"
-                        value="card"
-                        checked={payMethod === "card"}
-                        onChange={() => setPayMethod("card")}
-                        className="h-4 w-4 accent-brand"
-                      />
-                      <span className="font-bold text-ink">카드 · 간편결제</span>
+                  <div className="mt-3 rounded-xl border border-line bg-white p-4">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm text-ink-soft">예금주</span>
+                      <span className="font-bold text-ink">{DEPOSIT_ACCOUNT.holder}</span>
                     </div>
-                    {payMethod === "card" && (
-                      <p className="mt-3 rounded-xl border border-line bg-white p-4 text-xs leading-relaxed text-ink-soft">
-                        결제하기를 누르면 결제창이 열립니다.
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <div>
+                        <span className="text-sm text-ink-soft">{DEPOSIT_ACCOUNT.bank} </span>
+                        <span className="text-lg font-black tracking-tight text-ink">
+                          {DEPOSIT_ACCOUNT.number}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard
+                            ?.writeText(DEPOSIT_ACCOUNT.number)
+                            .then(() => {
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 1500);
+                            })
+                            .catch(() => {});
+                        }}
+                        className="shrink-0 rounded-full border border-brand px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-50"
+                      >
+                        {copied ? "복사됨 ✓" : "계좌 복사"}
+                      </button>
+                    </div>
+                    <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-ink-soft">
+                      위 계좌로 예약금 <b>{formatKRW(fee)}</b>(견적의 7%)을 입금해 주세요.
+                      입금이 확인되면 예약이 확정됩니다.
+                    </p>
+                  </div>
+
+                  {/* 입금자명(통장 대조용) + 입금 메모 */}
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-ink-soft">
+                        입금자명 <span className="font-normal text-ink-soft">(통장에 찍히는 이름)</span>
+                      </label>
+                      <input
+                        value={depositorName}
+                        onChange={(e) => setDepositorName(e.target.value)}
+                        placeholder={customerName || "예약자 성함"}
+                        className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink outline-none focus:border-brand"
+                      />
+                      <p className="mt-1 text-xs text-ink-soft">
+                        예약자 성함과 다른 이름으로 입금하시면 꼭 입력해 주세요. 입금 확인이 빨라져요.
                       </p>
-                    )}
-                  </label>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-ink-soft">
+                        입금 메모 <span className="font-normal text-ink-soft">(선택)</span>
+                      </label>
+                      <input
+                        value={feeMemo}
+                        onChange={(e) => setFeeMemo(e.target.value)}
+                        placeholder="예) 오후 3시경 입금 예정"
+                        className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink outline-none focus:border-brand"
+                      />
+                    </div>
+                  </div>
                 </div>
               </Field>
 
@@ -1018,10 +1018,8 @@ export default function BookPage() {
                 className="w-full rounded-full bg-brand py-4 text-base font-black text-white shadow-lg shadow-brand/20 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {paying
-                  ? "결제 진행 중…"
-                  : payMethod === "transfer"
-                    ? `예약금 ${formatKRW(fee)} 입금하고 예약하기`
-                    : `예약금 ${formatKRW(fee)} 결제하고 예약하기`}
+                  ? "예약 접수 중…"
+                  : `예약금 ${formatKRW(fee)} 입금 완료 · 예약 신청하기`}
               </button>
               {!allAgreed && (
                 <p className="-mt-2 text-center text-xs text-ink-soft">

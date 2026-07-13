@@ -28,6 +28,11 @@ export type Reservation = {
   agreedPrice: number | null; // 관리자가 확정한 협의 가격 (없으면 null)
   partnerQuote: number | null; // 배정 업체가 앱에서 보낸 견적 (없으면 null)
   partnerQuoteNote: string; // 업체 견적 메모
+  referrerCode: string; // 유입 추천 코드 (없으면 "")
+  depositorName: string; // 입금자명 (통장 대조용, 없으면 "")
+  feeMemo: string; // 예약금 입금 관련 메모
+  feePaid: boolean; // 예약금(수수료 7%) 체인랩스 입금 확인 여부
+  feePaidAt: string | null; // 입금 확인 표시 시각 (ISO, 없으면 null)
 };
 
 // DB 행(snake_case) → Reservation(camelCase)
@@ -53,6 +58,11 @@ type Row = {
   agreed_price: number | null;
   partner_quote: number | null;
   partner_quote_note: string | null;
+  referrer_code: string | null;
+  depositor_name: string | null;
+  fee_memo: string | null;
+  fee_paid: boolean | null;
+  fee_paid_at: string | null;
 };
 
 function fromRow(r: Row): Reservation {
@@ -78,6 +88,11 @@ function fromRow(r: Row): Reservation {
     agreedPrice: r.agreed_price ?? null,
     partnerQuote: r.partner_quote ?? null,
     partnerQuoteNote: r.partner_quote_note ?? "",
+    referrerCode: r.referrer_code ?? "",
+    depositorName: r.depositor_name ?? "",
+    feeMemo: r.fee_memo ?? "",
+    feePaid: r.fee_paid ?? false,
+    feePaidAt: r.fee_paid_at ?? null,
   };
 }
 
@@ -107,6 +122,8 @@ export async function createReservation(
     | "agreedPrice"
     | "partnerQuote"
     | "partnerQuoteNote"
+    | "feePaid"
+    | "feePaidAt"
   >
 ): Promise<Reservation> {
   const supabase = getSupabase();
@@ -134,6 +151,9 @@ export async function createReservation(
         payment_status: "paid",
         status: "pending",
         user_id: input.userId,
+        referrer_code: input.referrerCode ?? "",
+        depositor_name: input.depositorName ?? "",
+        fee_memo: input.feeMemo ?? "",
       })
       .select("*")
       .single();
@@ -152,12 +172,22 @@ export async function updateReservation(
     status?: ReservationStatus;
     partnerId?: string;
     agreedPrice?: number | null;
+    feePaid?: boolean;
+    depositorName?: string;
+    feeMemo?: string;
   }
 ): Promise<Reservation | null> {
   const fields: Record<string, unknown> = {};
   if (patch.status) fields.status = patch.status;
   if (patch.partnerId) fields.partner_id = patch.partnerId;
   if (patch.agreedPrice !== undefined) fields.agreed_price = patch.agreedPrice;
+  if (patch.feePaid !== undefined) {
+    fields.fee_paid = patch.feePaid;
+    // 입금 확인을 켜면 확인 시각을 기록하고, 해제하면 시각을 지운다.
+    fields.fee_paid_at = patch.feePaid ? new Date().toISOString() : null;
+  }
+  if (patch.depositorName !== undefined) fields.depositor_name = patch.depositorName;
+  if (patch.feeMemo !== undefined) fields.fee_memo = patch.feeMemo;
 
   const { data, error } = await getSupabase()
     .from(TABLE)

@@ -4,6 +4,7 @@ import { readApprovedPartners } from "@/lib/applicationStore";
 import { STATUS_META, PARTNERS, type ReservationStatus } from "@/lib/data";
 import { isAdminEmail } from "@/lib/auth";
 import { getRequestUser } from "@/lib/appAuth";
+import { accrueForReservation } from "@/lib/referralStore";
 
 const VALID = Object.keys(STATUS_META) as ReservationStatus[];
 
@@ -19,7 +20,14 @@ export async function PATCH(
   }
 
   const { id } = await ctx.params;
-  let body: { status?: string; partnerId?: string; agreedPrice?: number | null };
+  let body: {
+    status?: string;
+    partnerId?: string;
+    agreedPrice?: number | null;
+    feePaid?: boolean;
+    depositorName?: string;
+    feeMemo?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -58,14 +66,31 @@ export async function PATCH(
     }
   }
 
+  // 예약금(수수료) 입금 확인 · 입금자명 · 메모 (선택)
+  const feePaid = typeof body.feePaid === "boolean" ? body.feePaid : undefined;
+  const depositorName =
+    typeof body.depositorName === "string" ? body.depositorName.trim() : undefined;
+  const feeMemo = typeof body.feeMemo === "string" ? body.feeMemo.trim() : undefined;
+
   const updated = await updateReservation(id, {
     status: body.status as ReservationStatus | undefined,
     partnerId,
     agreedPrice,
+    feePaid,
+    depositorName,
+    feeMemo,
   });
   if (!updated) {
     return NextResponse.json({ error: "예약을 찾을 수 없습니다." }, { status: 404 });
   }
+
+  // 업체 배정·협의가 변경 시 추천 적립 재시도(멱등) — 업체 추천 커미션 반영.
+  try {
+    await accrueForReservation(updated);
+  } catch {
+    /* noop */
+  }
+
   return NextResponse.json({ reservation: updated });
 }
 

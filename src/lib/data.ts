@@ -315,6 +315,14 @@ export { FEE_RATE, FEE_PERCENT, platformFee } from "./pricing";
 export const PAYMENT_NOTICE =
   "온라인 결제 금액은 청소 전체 비용이 아닌, 예약 확정을 위한 손길 플랫폼 수수료(견적 금액의 7%)입니다. 청소 총액은 공간 크기, 오염도, 추가 요청사항에 따라 달라질 수 있으며, 잔금은 청소 완료 후 현장에서 파트너에게 결제합니다.";
 
+// 예약금(손길 수수료 7%) 입금 계좌 — PG 연동 전, 무통장 입금 전용.
+// 예약 결제 화면(/book)과 운영 대시보드(/admin)에서 공통으로 사용한다.
+export const DEPOSIT_ACCOUNT = {
+  bank: "토스뱅크",
+  number: "100261986907",
+  holder: "체인랩스",
+} as const;
+
 // PG 심사·정책 페이지·푸터에서 공통으로 쓰는 사업자/서비스 정보.
 export const COMPANY = {
   bizName: "체인랩스", // 상호
