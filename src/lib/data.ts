@@ -349,7 +349,7 @@ export const SITE_URL = (
 // apk 파일은 public/ 에 위치. 새 버전 배포 시 앱을 재빌드해 public/songil-app.apk 교체.
 export const APP = {
   apk: "/songil-app.apk",
-  version: "1.0.8",
+  version: "1.0.10",
   androidReady: true,
   iosReady: false,
 } as const;
