@@ -66,9 +66,12 @@ export default function AffiliatePage() {
       <h1 className="mt-4 text-3xl font-black tracking-tight text-ink">내 추천 링크로 함께 벌어요</h1>
       <p className="mt-2 leading-relaxed text-ink-soft">
         친구·이웃 <b className="text-ink">고객</b>이나 청소 <b className="text-ink">업체</b>를 소개하고,
-        추천 링크로 들어온 분의 <b className="text-ink">첫 예약</b>에서 견적의{" "}
-        <b className="text-brand">3.5%</b>를 적립받으세요.
+        추천 링크로 들어온 분의 <b className="text-ink">첫 예약</b>마다 적립받으세요.
+        <br />
+        <b className="text-brand">30만원 계약이면 약 10,500원, 100만원이면 약 35,000원</b>이 내 적립금이에요.
       </p>
+
+      <ReferralCalculator />
 
       {loading && <p className="mt-10 text-center text-ink-soft">불러오는 중…</p>}
 
@@ -96,6 +99,58 @@ export default function AffiliatePage() {
           <EarningsList earnings={data.earnings} />
         </div>
       )}
+    </div>
+  );
+}
+
+const RATE = 0.035;
+const CALC_PRESETS = [300000, 500000, 1000000];
+
+// 예상 적립금 계산기 — 비율(3.5%)이 아니라 실제 지급 금액을 보여준다.
+function ReferralCalculator() {
+  const [amount, setAmount] = useState(300000);
+  const payout = Math.round(amount * RATE);
+
+  return (
+    <div className="mt-6 rounded-3xl border border-brand-100 bg-brand-50/50 p-6">
+      <p className="text-sm font-black text-brand-700">💰 얼마를 벌 수 있나요?</p>
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-xs text-ink-soft">청소 계약 금액</p>
+          <p className="text-lg font-black text-ink">{formatKRW(amount)}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-ink-soft">내 예상 적립금</p>
+          <p className="text-2xl font-black text-brand">약 {formatKRW(payout)}</p>
+        </div>
+      </div>
+      <input
+        type="range"
+        min={100000}
+        max={2000000}
+        step={50000}
+        value={amount}
+        onChange={(e) => setAmount(Number(e.target.value))}
+        className="mt-4 w-full accent-[var(--color-brand)]"
+        aria-label="청소 계약 금액"
+      />
+      <div className="mt-3 flex flex-wrap gap-2">
+        {CALC_PRESETS.map((p) => (
+          <button
+            key={p}
+            onClick={() => setAmount(p)}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+              amount === p ? "bg-brand text-white" : "bg-white text-ink-soft ring-1 ring-line hover:bg-cream"
+            }`}
+          >
+            {Math.round(p / 10000)}만원 → {formatKRW(Math.round(p * RATE))}
+          </button>
+        ))}
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-ink-soft">
+        추천 링크로 들어온 분의 <b className="text-ink">첫 예약</b> 1회, 견적의{" "}
+        {(RATE * 100).toFixed(1)}%가 적립돼요. 금액이 클수록 적립금도 커집니다.
+      </p>
     </div>
   );
 }
