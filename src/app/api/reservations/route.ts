@@ -10,7 +10,7 @@ import {
   type PropertyInfo,
 } from "@/lib/data";
 import { computeEstimate, platformFee } from "@/lib/pricing";
-import { accrueForReservation, normalizeCode } from "@/lib/referralStore";
+import { normalizeCode } from "@/lib/referralStore";
 
 // 서비스 성격에 맞게 집/회사/부분청소 정보를 정리한다.
 function sanitizeProperty(
@@ -157,12 +157,9 @@ export async function POST(request: NextRequest) {
     feeMemo: typeof body.feeMemo === "string" ? body.feeMemo.trim() : "",
   });
 
-  // 추천 적립(첫 예약 1회) — 실패해도 예약 자체는 성공 처리.
-  try {
-    await accrueForReservation(reservation);
-  } catch {
-    /* noop */
-  }
+  // 리커링 커미션은 "정상 완료(completed)" 시점에만 적립되므로(작업 완료 전),
+  // 예약 생성(pending) 단계에서는 적립하지 않는다. 유입 추천코드는 저장돼 있다가
+  // 관리자가 완료 처리할 때 commissionStore.syncReservationCommission 에서 적립된다.
 
   return NextResponse.json({ reservation }, { status: 201 });
 }

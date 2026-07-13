@@ -1,9 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getRequestUser } from "@/lib/appAuth";
 import { isAdminEmail } from "@/lib/auth";
-import { markEarning } from "@/lib/referralStore";
+import { markCommission } from "@/lib/commissionStore";
+import type { CommissionStatus } from "@/lib/commission";
 
-// PATCH /api/admin/referrals/[id] { status: 'paid'|'pending' } → 지급 처리 (관리자 전용).
+// PATCH /api/admin/referrals/[id] { status } → 커미션 상태 수동 변경 (관리자 전용).
+//   status: pending | available | paid | canceled | deducted
+const VALID: CommissionStatus[] = ["pending", "available", "paid", "canceled", "deducted"];
+
 export async function PATCH(
   request: NextRequest,
   ctx: RouteContext<"/api/admin/referrals/[id]">
@@ -21,13 +25,13 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  if (body.status !== "paid" && body.status !== "pending") {
+  if (!VALID.includes(body.status as CommissionStatus)) {
     return NextResponse.json({ error: "알 수 없는 상태입니다." }, { status: 400 });
   }
 
-  const updated = await markEarning(id, body.status);
+  const updated = await markCommission(id, body.status as CommissionStatus);
   if (!updated) {
-    return NextResponse.json({ error: "적립 내역을 찾을 수 없습니다." }, { status: 404 });
+    return NextResponse.json({ error: "커미션 내역을 찾을 수 없습니다." }, { status: 404 });
   }
-  return NextResponse.json({ earning: updated });
+  return NextResponse.json({ commission: updated });
 }

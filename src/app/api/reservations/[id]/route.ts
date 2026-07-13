@@ -4,7 +4,7 @@ import { readApprovedPartners } from "@/lib/applicationStore";
 import { STATUS_META, PARTNERS, type ReservationStatus } from "@/lib/data";
 import { isAdminEmail } from "@/lib/auth";
 import { getRequestUser } from "@/lib/appAuth";
-import { accrueForReservation } from "@/lib/referralStore";
+import { syncReservationCommission } from "@/lib/commissionStore";
 
 const VALID = Object.keys(STATUS_META) as ReservationStatus[];
 
@@ -84,11 +84,13 @@ export async function PATCH(
     return NextResponse.json({ error: "예약을 찾을 수 없습니다." }, { status: 404 });
   }
 
-  // 업체 배정·협의가 변경 시 추천 적립 재시도(멱등) — 업체 추천 커미션 반영.
+  // 예약 상태 변화에 따라 리커링 커미션 적립/회수(멱등).
+  //   completed → 고객·업체 추천 커미션 적립, cancelled → 커미션 회수.
+  //   협의가 변경(부분환불 등) 시 완료 건이면 금액 재계산도 여기서 처리된다.
   try {
-    await accrueForReservation(updated);
+    await syncReservationCommission(updated);
   } catch {
-    /* noop */
+    /* 커미션 처리 실패는 예약 흐름을 막지 않는다. */
   }
 
   return NextResponse.json({ reservation: updated });

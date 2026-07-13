@@ -320,3 +320,114 @@ alter table public.reservations
   add column if not exists fee_memo       text default '',    -- 입금 관련 메모
   add column if not exists fee_paid       boolean not null default false, -- 예약금 입금 확인 여부
   add column if not exists fee_paid_at    timestamptz;         -- 입금 확인 표시 시각
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 파트너 리커링 커미션 시스템 (2026-07-13)
+--   기존 첫예약 1회 3.5% 단건 적립(referral_earnings)을 대체하는 반복 지급 구조.
+--   • 추천 대상(고객/업체)의 "정상 완료 거래"마다 커미션이 계속 발생한다.
+--   • 첫 완료 거래 = first_rate(3.5%), 이후 완료 거래 = repeat_rate(2%) 반복.
+--   • 한 거래에 고객·업체 추천이 동시 존재하면 각자 자기 요율의 50%씩(합계 ≤ 3.5%).
+--   • 모든 금액 계산은 서버(commissionStore.ts)에서만 수행한다.
+--   기존 profiles(referral_code·payout_*)를 파트너 프로필로 재사용한다(중복 방지).
+--   아래 블록을 Supabase SQL Editor 에 붙여넣고 "Run" 하세요.
+-- ══════════════════════════════════════════════════════════════
+
+-- 커미션 비율 설정 (단일 행, 관리자가 변경). 서버 계산의 유일한 진실원.
+create table if not exists public.commission_settings (
+  id                text primary key default 'default',
+  platform_fee_rate numeric not null default 0.07,    -- 플랫폼 총수수료율
+  first_rate        numeric not null default 0.035,   -- 첫 완료 거래 파트너 지급률
+  repeat_rate       numeric not null default 0.02,    -- 이후 완료 거래 파트너 지급률(리커링)
+  split_customer    numeric not null default 0.5,     -- 중복 추천 시 고객 추천자 분배
+  split_provider    numeric not null default 0.5,     -- 중복 추천 시 업체 추천자 분배
+  min_payout        integer not null default 10000,   -- 최소 정산 금액(원)
+  updated_at        timestamptz not null default now()
+);
+insert into public.commission_settings (id) values ('default')
+on conflict (id) do nothing;
+
+-- 추천 관계: 피추천 대상(고객/업체) ↔ 추천 파트너. 최초 1회 귀속되며 변경 불가.
+--   referred_key: 고객='cust:<user_id 또는 ph:전화>', 업체='ptnr:<partner_application_id>'
+create table if not exists public.referral_relations (
+  id                 uuid primary key default gen_random_uuid(),
+  created_at         timestamptz not null default now(),
+  referrer_code      text not null,                   -- 추천인(파트너) 코드
+  referrer_user_id   uuid,                            -- 추천인 user_id (profiles.id)
+  referred_type      text not null,                   -- 'customer' | 'provider'
+  referred_key       text not null,                   -- 피추천 대상 식별
+  referred_name      text default '',                 -- 표시용(고객명/업체명)
+  referral_link      text default '',                 -- 가입 시 사용된 추천 링크
+  status             text not null default 'active',  -- active | suspended | ended
+  first_completed_at timestamptz,                     -- 첫 완료 거래일
+  completed_count    integer not null default 0,      -- 누적 완료 거래 수(정상 건)
+  gross_amount       bigint  not null default 0,      -- 누적 거래금액
+  total_commission   bigint  not null default 0,      -- 누적 커미션(정상 건)
+  note               text default ''
+);
+create unique index if not exists referral_relations_dedupe_uk
+  on public.referral_relations (referred_type, referred_key);
+create index if not exists referral_relations_referrer_idx
+  on public.referral_relations (referrer_code, status);
+
+-- 거래(예약)별 커미션 원장. (reservation_id, referred_type) 유니크로 멱등 보장.
+create table if not exists public.partner_commissions (
+  id              uuid primary key default gen_random_uuid(),
+  created_at      timestamptz not null default now(),
+  relation_id     uuid references public.referral_relations(id) on delete cascade,
+  referrer_code   text not null,
+  referred_type   text not null,                      -- 'customer' | 'provider'
+  referred_name   text default '',
+  reservation_id  text not null,
+  sequence_no     integer not null default 1,         -- 관계 내 몇 번째 완료 거래
+  is_first        boolean not null default false,     -- 첫 완료 거래 여부
+  base_amount     integer not null,                   -- 실결제(협의) 기준액
+  rate            numeric not null,                   -- 적용된 실효 적립률(분배 반영)
+  amount          integer not null,                   -- 커미션 금액(원)
+  status          text not null default 'pending',    -- pending|available|paid|canceled|deducted
+  paid_at         timestamptz,
+  payout_id       uuid,
+  note            text default ''
+);
+create unique index if not exists partner_commissions_uk
+  on public.partner_commissions (reservation_id, referred_type);
+create index if not exists partner_commissions_referrer_idx
+  on public.partner_commissions (referrer_code, status);
+create index if not exists partner_commissions_relation_idx
+  on public.partner_commissions (relation_id);
+
+-- 정산 배치: 관리자가 available 커미션을 묶어 지급 처리한 기록.
+create table if not exists public.partner_payouts (
+  id             uuid primary key default gen_random_uuid(),
+  created_at     timestamptz not null default now(),
+  referrer_code  text not null,
+  amount         integer not null,                    -- 지급 총액(차감 반영)
+  count          integer not null default 0,          -- 포함된 커미션 건수
+  status         text not null default 'available',   -- available|paid|canceled
+  period         text default '',                     -- 정산 기준(예: 2026-07)
+  bank           text default '',
+  account        text default '',
+  holder         text default '',
+  paid_at        timestamptz,
+  note           text default ''
+);
+create index if not exists partner_payouts_referrer_idx
+  on public.partner_payouts (referrer_code, status);
+
+-- 부정/오류 표시: 거래·관계·파트너 단위로 표시하고 커미션을 제외한다.
+create table if not exists public.fraud_flags (
+  id           uuid primary key default gen_random_uuid(),
+  created_at   timestamptz not null default now(),
+  target_type  text not null,                         -- 'reservation' | 'relation' | 'partner'
+  target_id    text not null,
+  reason       text default '',
+  created_by   text default ''
+);
+create unique index if not exists fraud_flags_target_uk
+  on public.fraud_flags (target_type, target_id);
+
+alter table public.commission_settings enable row level security;
+alter table public.referral_relations  enable row level security;
+alter table public.partner_commissions enable row level security;
+alter table public.partner_payouts     enable row level security;
+alter table public.fraud_flags         enable row level security;
