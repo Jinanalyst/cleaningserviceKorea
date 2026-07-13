@@ -120,6 +120,12 @@ export default function AdminPartnersPage() {
         >
           고객 관리
         </Link>
+        <Link
+          href="/admin/referrals"
+          className="rounded-full bg-white px-4 py-2 text-sm font-bold text-ink-soft ring-1 ring-line transition hover:bg-cream-deep"
+        >
+          추천 정산
+        </Link>
       </div>
 
       {/* 통계 */}

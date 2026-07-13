@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Link from "next/link";
 import AuthButtons from "@/components/AuthButtons";
+import RefCapture from "@/components/RefCapture";
 import { COMPANY, SITE_URL } from "@/lib/data";
 import "./globals.css";
 
@@ -79,6 +80,9 @@ function Header() {
           <Link href="/reservations" className="hover:text-ink transition-colors">
             예약 조회
           </Link>
+          <Link href="/affiliate" className="hover:text-ink transition-colors">
+            추천·제휴
+          </Link>
           <Link href="/partners/apply" className="font-bold text-brand hover:text-brand-600 transition-colors">
             파트너 등록
           </Link>
@@ -126,6 +130,9 @@ function Footer() {
             </li>
             <li>
               <Link href="/partners/apply" className="hover:text-brand">파트너 등록하기</Link>
+            </li>
+            <li>
+              <Link href="/affiliate" className="hover:text-brand">추천·제휴 파트너</Link>
             </li>
             <li>
               <Link href="/app" className="hover:text-brand">모바일 앱 다운로드</Link>
@@ -205,6 +212,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${noto.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
+        <RefCapture />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

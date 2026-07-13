@@ -127,7 +127,9 @@ export async function readAllApplications(): Promise<Application[]> {
 }
 
 export async function createApplication(
-  input: Omit<Application, "id" | "createdAt" | "status" | "reviewNote">
+  input: Omit<Application, "id" | "createdAt" | "status" | "reviewNote"> & {
+    referrerCode?: string;
+  }
 ): Promise<Application> {
   const supabase = getSupabase();
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -152,6 +154,7 @@ export async function createApplication(
         status: "submitted",
         review_note: "",
         user_id: input.userId,
+        referrer_code: input.referrerCode ?? "",
       })
       .select("*")
       .single();

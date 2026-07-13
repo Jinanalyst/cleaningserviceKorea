@@ -8,6 +8,7 @@ import {
 import { SERVICES } from "@/lib/data";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 import { getRequestUser } from "@/lib/appAuth";
+import { normalizeCode } from "@/lib/referralStore";
 
 const SERVICE_NAMES = SERVICES.map((s) => s.name);
 
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
     teamSize,
     intro,
     userId,
+    referrerCode: normalizeCode(body.ref), // 추천으로 소개된 업체
   });
 
   // 사진을 신청 id 기준으로 Storage(partner-photos)에 업로드 (승인 시 노출)

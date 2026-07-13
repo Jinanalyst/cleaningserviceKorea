@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import { getStoredRef } from "@/lib/ref";
 import {
   SERVICES,
   BANKS,
@@ -107,6 +108,7 @@ export default function PartnerApplyPage() {
           companyName, ownerName, bizNumber, phone, email,
           bankName, accountNumber, accountHolder, regions,
           services, experience, teamSize, intro,
+          ref: getStoredRef(),
         }),
       });
       const data = await res.json();
