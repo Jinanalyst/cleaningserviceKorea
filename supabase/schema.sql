@@ -247,3 +247,9 @@ alter table public.reservations
 -- 상담: 업체 배정 (협의가는 기존 quoted_price 사용)
 alter table public.consultations
   add column if not exists partner_id text default '';
+
+-- 파트너 단가표: 승인된 협력 파트너가 직접 설정하는 서비스별 시작가.
+--   [{ "id": "p0", "name": "가정 정기청소", "startPrice": 60000, "note": "..." }, ...]
+--   앱/웹의 파트너 단가 설정 화면에서 저장하며, 공개 파트너 목록에도 함께 노출된다.
+alter table public.partner_applications
+  add column if not exists prices jsonb not null default '[]'::jsonb;

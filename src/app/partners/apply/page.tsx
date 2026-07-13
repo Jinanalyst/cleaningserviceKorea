@@ -396,6 +396,19 @@ function ApplicationCard({ app }: { app: Application }) {
           {app.regions && <Info k="서비스 지역" v={app.regions} />}
           <Info k="정산 계좌" v={`${app.bankName} ${maskAccount(app.accountNumber)}`} />
         </dl>
+
+        {/* 승인된 파트너는 서비스 단가를 직접 설정할 수 있어요. */}
+        {app.status === "approved" && (
+          <Link
+            href="/partners/prices"
+            className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 transition hover:bg-brand-100"
+          >
+            <span className="text-sm font-bold text-brand-700">
+              🧾 서비스 단가 설정하기
+            </span>
+            <span className="text-sm font-bold text-brand">›</span>
+          </Link>
+        )}
       </div>
     </div>
   );

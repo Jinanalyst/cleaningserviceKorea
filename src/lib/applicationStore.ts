@@ -1,7 +1,7 @@
 // 파트너 등록 신청 저장소 — Supabase(Postgres) 기반. 서버 전용.
 import "server-only";
 import { getSupabase } from "./supabase";
-import type { ApplicationStatus } from "./data";
+import { type ApplicationStatus, SERVICE_INFO } from "./data";
 
 const TABLE = "partner_applications";
 const PHOTO_BUCKET = "partner-photos";
@@ -213,12 +213,13 @@ export type PublicPartner = {
   regions: string;
   intro: string;
   photos: string[];
+  prices: PartnerPrice[];
 };
 
 export async function readApprovedPartners(): Promise<PublicPartner[]> {
   const { data, error } = await getSupabase()
     .from(TABLE)
-    .select("id, company_name, services, regions, intro")
+    .select("id, company_name, services, regions, intro, prices")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   if (error) return [];
@@ -228,9 +229,104 @@ export async function readApprovedPartners(): Promise<PublicPartner[]> {
     services: (r.services as string[]) ?? [],
     regions: (r.regions as string) ?? "",
     intro: (r.intro as string) ?? "",
+    prices: parsePrices(r.prices),
   }));
   // 각 업체의 대표 사진(Storage) 첨부
   return Promise.all(
     base.map(async (p) => ({ ...p, photos: await listPartnerPhotos(p.id) }))
   );
+}
+
+// ══════════════════════════════════════════════════════════════
+// 파트너 단가표 — 승인된 협력 파트너가 직접 설정하는 서비스별 시작가.
+//   partner_applications.prices (jsonb) 에 저장한다.
+//   파트너 id = 승인된 신청 id(PT-XXXXXX). 앱/웹 공용 설정 화면에서 편집.
+// ══════════════════════════════════════════════════════════════
+export type PartnerPrice = {
+  id: string;
+  name: string; // 서비스명
+  startPrice: number; // 시작가(원)
+  note: string; // 안내 문구
+};
+
+export type PartnerPriceList = {
+  partnerId: string;
+  companyName: string;
+  prices: PartnerPrice[];
+};
+
+// 아직 단가를 설정하지 않은 파트너에게 보여줄 기본 서비스 시작가.
+export const DEFAULT_PARTNER_PRICES: PartnerPrice[] = SERVICE_INFO.map((s, i) => ({
+  id: `p${i}`,
+  name: s.name,
+  startPrice: s.startPrice,
+  note: s.desc,
+}));
+
+// 저장된 jsonb 를 검증·정규화한다. 비었거나 형식이 틀리면 빈 배열.
+function parsePrices(raw: unknown): PartnerPrice[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .slice(0, 30)
+    .map((p, i) => {
+      const o = (p ?? {}) as Record<string, unknown>;
+      return {
+        id: String(o.id ?? `p${i}`).slice(0, 40),
+        name: String(o.name ?? "").trim().slice(0, 80),
+        startPrice: Math.min(100000000, Math.max(0, Math.round(Number(o.startPrice) || 0))),
+        note: String(o.note ?? "").trim().slice(0, 300),
+      };
+    })
+    .filter((p) => p.name);
+}
+
+// 로그인 계정의 승인된 파트너별 단가표. 미설정이면 기본 시작가로 시드해서 편집을 유도한다.
+export async function readPartnerPriceLists(userId: string): Promise<PartnerPriceList[]> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("id, company_name, prices")
+    .eq("user_id", userId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return data.map((r) => {
+    const parsed = parsePrices(r.prices);
+    return {
+      partnerId: r.id as string,
+      companyName: r.company_name as string,
+      prices: parsed.length > 0 ? parsed : DEFAULT_PARTNER_PRICES,
+    };
+  });
+}
+
+// 단가표 저장 — 본인(user_id) 소유의 승인된 파트너에 한해 허용.
+export async function savePartnerPrices(
+  userId: string,
+  partnerId: string,
+  prices: PartnerPrice[]
+): Promise<PartnerPriceList | null> {
+  const supabase = getSupabase();
+  // 소유·승인 검증: 이 파트너가 로그인 계정의 승인된 업체인지 확인.
+  const { data: owned } = await supabase
+    .from(TABLE)
+    .select("id")
+    .eq("id", partnerId)
+    .eq("user_id", userId)
+    .eq("status", "approved")
+    .maybeSingle();
+  if (!owned) return null;
+
+  const clean = parsePrices(prices);
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({ prices: clean })
+    .eq("id", partnerId)
+    .select("id, company_name, prices")
+    .maybeSingle();
+  if (error || !data) return null;
+  return {
+    partnerId: data.id as string,
+    companyName: data.company_name as string,
+    prices: parsePrices(data.prices),
+  };
 }
