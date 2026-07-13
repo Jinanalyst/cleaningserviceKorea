@@ -253,3 +253,70 @@ alter table public.consultations
 --   앱/웹의 파트너 단가 설정 화면에서 저장하며, 공개 파트너 목록에도 함께 노출된다.
 alter table public.partner_applications
   add column if not exists prices jsonb not null default '[]'::jsonb;
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 추천(레퍼럴) · 제휴 파트너 시스템 (2026-07-13)
+--   • 로그인한 모든 사용자에게 고유 추천 코드를 발급.
+--   • 추천 링크(?ref=코드)로 유입돼 "첫 예약"을 한 고객, 또는 추천으로 소개돼
+--     승인된 업체의 "첫 예약"에서 견적의 3.5% 를 추천인에게 적립한다.
+--   • 제휴 파트너는 정산 계좌를 등록하고, 관리자가 지급완료 처리한다.
+-- ══════════════════════════════════════════════════════════════
+
+-- 프로필: 내 추천 코드 + 나를 데려온 추천 코드 + 정산 계좌
+alter table public.profiles
+  add column if not exists referral_code  text,
+  add column if not exists referred_by    text default '',
+  add column if not exists payout_bank    text default '',
+  add column if not exists payout_account text default '',
+  add column if not exists payout_holder  text default '';
+
+create unique index if not exists profiles_referral_code_uk
+  on public.profiles (referral_code) where referral_code is not null;
+
+-- 예약·파트너신청 유입 추천코드 (누가 소개했는지)
+alter table public.reservations
+  add column if not exists referrer_code text default '';
+alter table public.partner_applications
+  add column if not exists referrer_code text default '';
+
+-- 추천 적립 원장.
+--   첫 예약 1회만 = 피추천 대상당 1건. (source_type, referred_key) 유니크로 보장한다.
+--   referred_key: 고객='cust:<user_id 또는 ph:전화>', 업체='ptnr:<partner_id>'
+create table if not exists public.referral_earnings (
+  id             uuid primary key default gen_random_uuid(),
+  created_at     timestamptz not null default now(),
+  referrer_code  text not null,                    -- 적립 대상(추천인) 코드
+  source_type    text not null,                    -- 'customer' | 'partner'
+  referred_key   text not null,                    -- 피추천 대상 식별
+  referred_name  text default '',                  -- 표시용(고객명/업체명)
+  reservation_id text not null,                    -- 근거 예약 코드
+  quote_amount   integer not null,                 -- 견적 기준액
+  rate           numeric not null default 0.035,   -- 적립률
+  amount         integer not null,                 -- 커미션 금액(원)
+  status         text not null default 'pending',  -- pending | paid
+  paid_at        timestamptz
+);
+
+create unique index if not exists referral_earnings_dedupe_uk
+  on public.referral_earnings (source_type, referred_key);
+create index if not exists referral_earnings_referrer_idx
+  on public.referral_earnings (referrer_code, status);
+create index if not exists referral_earnings_created_idx
+  on public.referral_earnings (created_at desc);
+
+-- RLS 활성화 (정책 없음 = service_role 키로만 접근, 브라우저 anon 접근 차단)
+alter table public.referral_earnings enable row level security;
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 무통장 입금(계좌이체) 확인 (2026-07): PG 연동 전, 체인랩스 계좌로
+--   예약금(손길 수수료 7%)을 이체받고 입금 여부를 수기로 확인한다.
+--   고객이 예약 시 입금자명(통장 대조용)을 남기고, 운영자가 /admin 에서
+--   입금 확인 토글 + 메모로 정산을 관리한다. (아래 블록을 SQL Editor 에서 Run)
+-- ══════════════════════════════════════════════════════════════
+alter table public.reservations
+  add column if not exists depositor_name text default '',    -- 입금자명 (통장 대조용)
+  add column if not exists fee_memo       text default '',    -- 입금 관련 메모
+  add column if not exists fee_paid       boolean not null default false, -- 예약금 입금 확인 여부
+  add column if not exists fee_paid_at    timestamptz;         -- 입금 확인 표시 시각
