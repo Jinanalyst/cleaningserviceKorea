@@ -222,6 +222,8 @@ function CommissionsPanel({
 
   return (
     <>
+      <AttributeCard onChanged={onChanged} />
+
       <div className="mt-6 flex flex-wrap gap-2">
         {(["all", "pending", "available", "paid", "canceled", "deducted"] as const).map((f) => (
           <button
@@ -298,6 +300,89 @@ function CommissionsPanel({
         </div>
       )}
     </>
+  );
+}
+
+// 관리자 수동 추천 귀속(보정/테스트) — 예약을 추천코드에 연결하고 즉시 재적립.
+function AttributeCard({ onChanged }: { onChanged: () => void }) {
+  const [reservationId, setReservationId] = useState("");
+  const [code, setCode] = useState("");
+  const [type, setType] = useState<ReferredType>("customer");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function submit() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/admin/referrals/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "attribute",
+          reservationId: reservationId.trim(),
+          code: code.trim(),
+          type,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setMsg({ ok: false, text: d.error || "귀속에 실패했어요." });
+      } else {
+        setMsg({
+          ok: true,
+          text: d.accrued
+            ? "✓ 귀속 완료 — 예약이 완료 상태라 커미션이 적립됐어요. 목록을 확인하세요."
+            : "✓ 귀속 완료 — 예약이 완료되면 자동 적립됩니다.",
+        });
+        onChanged();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-brand-200 bg-brand-50/40 p-5">
+      <p className="text-sm font-black text-ink">🔧 수동 추천 귀속 (보정·테스트)</p>
+      <p className="mt-1 text-xs text-ink-soft">
+        예약의 고객 또는 담당 업체를 추천코드에 연결하고 즉시 재적립해요. 완료된 예약이면 바로 커미션이 뜹니다.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+        <input
+          value={reservationId}
+          onChange={(e) => setReservationId(e.target.value)}
+          placeholder="예약번호 (예: SG-HNC2B4)"
+          className="rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand"
+        />
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="추천코드"
+          className="rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand"
+        />
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value as ReferredType)}
+          className="rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand"
+        >
+          <option value="customer">고객 추천</option>
+          <option value="provider">업체 추천</option>
+        </select>
+        <button
+          onClick={submit}
+          disabled={busy || !reservationId.trim() || !code.trim()}
+          className="rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-40"
+        >
+          {busy ? "처리 중…" : "귀속·재적립"}
+        </button>
+      </div>
+      {msg && (
+        <p className={`mt-2 text-xs font-medium ${msg.ok ? "text-brand-700" : "text-rose-600"}`}>
+          {msg.text}
+        </p>
+      )}
+    </div>
   );
 }
 

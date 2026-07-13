@@ -6,7 +6,9 @@ import {
   flagFraud,
   unflagFraud,
   createPayoutBatch,
+  attributeReservation,
 } from "@/lib/commissionStore";
+import type { ReferredType } from "@/lib/commission";
 
 // POST /api/admin/referrals/actions → 관계 정지/부정 표시/정산 지급 (관리자 전용).
 //   { kind: 'relation', id, status: 'active'|'suspended'|'ended' }
@@ -64,6 +66,20 @@ export async function POST(request: NextRequest) {
     }
     await unflagFraud(targetType, targetId);
     return NextResponse.json({ ok: true });
+  }
+
+  if (kind === "attribute") {
+    const reservationId = String(body.reservationId ?? "").trim();
+    const code = String(body.code ?? "");
+    const type = String(body.type ?? "");
+    if (!reservationId || (type !== "customer" && type !== "provider")) {
+      return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    }
+    const result = await attributeReservation(reservationId, code, type as ReferredType);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error ?? "귀속에 실패했어요." }, { status: 400 });
+    }
+    return NextResponse.json(result);
   }
 
   if (kind === "payout") {

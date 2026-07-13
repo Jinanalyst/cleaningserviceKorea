@@ -15,7 +15,7 @@ import {
   type CommissionStatus,
   type ReferredType,
 } from "./commission";
-import type { Reservation } from "./store";
+import { readById, type Reservation } from "./store";
 
 const PROFILES = "profiles";
 const APPLICATIONS = "partner_applications";
@@ -624,6 +624,51 @@ export async function unflagFraud(
     .delete()
     .eq("target_type", targetType)
     .eq("target_id", targetId);
+}
+
+// 관리자 수동 추천 귀속(보정/테스트) — 예약의 고객 또는 담당 업체를 추천코드에 연결하고
+//   즉시 재적립한다. 예약이 이미 완료 상태여야 커미션이 발생한다.
+export async function attributeReservation(
+  reservationId: string,
+  code: string,
+  type: ReferredType
+): Promise<{ ok: boolean; error?: string; accrued?: boolean }> {
+  const c = normalizeCode(code);
+  if (!c) return { ok: false, error: "추천코드를 입력하세요." };
+  const owner = await referrerUserIdByCode(c);
+  if (!owner) return { ok: false, error: "존재하지 않는 추천코드예요." };
+
+  const res = await readById(reservationId);
+  if (!res) return { ok: false, error: "예약을 찾을 수 없어요." };
+
+  const supabase = getSupabase();
+  if (type === "customer") {
+    await supabase.from("reservations").update({ referrer_code: c }).eq("id", reservationId);
+  } else {
+    // 업체 추천은 담당 업체의 "승인 신청(partner_applications)"에 코드를 붙인다.
+    if (!res.partnerId) return { ok: false, error: "이 예약에 배정된 업체가 없어요." };
+    const { data: app } = await supabase
+      .from(APPLICATIONS)
+      .select("id")
+      .eq("id", res.partnerId)
+      .maybeSingle();
+    if (!app) {
+      return {
+        ok: false,
+        error: "담당 업체가 기본 시드 업체라 업체 추천을 붙일 수 없어요. 고객 추천으로 테스트하세요.",
+      };
+    }
+    await supabase.from(APPLICATIONS).update({ referrer_code: c }).eq("id", res.partnerId);
+  }
+
+  // 변경된 예약으로 재적립(완료 상태면 커미션 생성).
+  const fresh = await readById(reservationId);
+  let accrued = false;
+  if (fresh) {
+    await syncReservationCommission(fresh);
+    accrued = fresh.status === "completed";
+  }
+  return { ok: true, accrued };
 }
 
 export type Payout = {
