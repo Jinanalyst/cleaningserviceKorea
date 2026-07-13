@@ -3,14 +3,13 @@ import { createReservation, readAll, readByUser } from "@/lib/store";
 import { isAdminEmail } from "@/lib/auth";
 import { getRequestUser } from "@/lib/appAuth";
 import {
-  DEPOSIT,
   partnerById,
   serviceById,
   categoryOf,
   TIME_SLOTS,
   type PropertyInfo,
 } from "@/lib/data";
-import { computeEstimate } from "@/lib/pricing";
+import { computeEstimate, platformFee } from "@/lib/pricing";
 
 // 서비스 성격에 맞게 집/회사/부분청소 정보를 정리한다.
 function sanitizeProperty(
@@ -146,7 +145,7 @@ export async function POST(request: NextRequest) {
     notes: (notes || "").trim(),
     property,
     price,
-    deposit: DEPOSIT,
+    deposit: platformFee(price), // 손길 수수료 = 견적의 7%
     userId: user?.id ?? null,
   });
 

@@ -13,7 +13,7 @@ const noto = Noto_Sans_KR({
 });
 
 const DESCRIPTION =
-  "검증된 청소 업체를 연결해 드리는 청소 중개 플랫폼. 날짜만 고르면 예약금 3만원으로 예약 완료.";
+  "검증된 청소 업체를 연결해 드리는 청소 중개 플랫폼. 날짜만 고르면 예약금(견적의 7%)으로 예약 완료.";
 
 // metadataBase 를 지정하면 canonical·OG·트위터 카드의 상대경로가 대표 도메인
 // (SITE_URL, 기본 https://handway.net) 기준 절대 URL 로 자동 변환된다.
@@ -107,7 +107,7 @@ function Footer() {
           <p className="text-sm font-bold text-mint">마음을 담은 깨끗함</p>
           <p className="max-w-xs text-sm leading-relaxed text-ink-soft">
             검증된 청소 파트너를 연결해 드리는 청소 예약 중개 플랫폼이에요.
-            온라인 결제는 예약금 3만원, 잔금은 청소 완료 후 현장에서 결제합니다.
+            온라인 결제는 예약금(견적의 7%), 잔금은 청소 완료 후 현장에서 결제합니다.
           </p>
         </div>
 

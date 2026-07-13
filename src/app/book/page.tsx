@@ -8,7 +8,6 @@ import {
   PARTNERS,
   SERVICES,
   TIME_SLOTS,
-  DEPOSIT,
   PROPERTY_TYPES,
   ROOM_OPTIONS,
   BATH_OPTIONS,
@@ -19,7 +18,7 @@ import {
   partnerById,
   serviceById,
 } from "@/lib/data";
-import { DIFFICULTY, OPTIONS, computeEstimate } from "@/lib/pricing";
+import { DIFFICULTY, OPTIONS, computeEstimate, platformFee } from "@/lib/pricing";
 
 type Step = 0 | 1 | 2 | 3 | 4;
 const STEP_LABELS = ["서비스", "날짜·시간", "정보 입력", "예약금 결제"];
@@ -167,6 +166,8 @@ export default function BookPage() {
     date: date ?? "",
     options,
   });
+  // 온라인 결제(예약금) = 손길 플랫폼 수수료 = 견적의 7%
+  const fee = platformFee(est.final);
 
   function toggleArea(a: string) {
     setAreas((prev) =>
@@ -303,7 +304,7 @@ export default function BookPage() {
           </div>
           <h1 className="mt-5 text-2xl font-black text-ink">예약이 확정됐어요!</h1>
           <p className="mt-2 text-ink-soft">
-            예약금 {formatKRW(DEPOSIT)} 결제가 완료됐어요.
+            예약금 {formatKRW(fee)} (견적의 7%) 결제가 완료됐어요.
             <br />
             담당 업체를 배정한 뒤 문자로 알려드릴게요.
           </p>
@@ -315,7 +316,7 @@ export default function BookPage() {
             )}
             <Row k="희망 업체" v={resolvedPartner?.name ?? ""} />
             <Row k="방문" v={`${date ? formatDateKo(date) : ""} ${timeSlot}`} />
-            <Row k="온라인 결제 (예약금)" v={formatKRW(DEPOSIT)} strong />
+            <Row k="온라인 결제 (예약금·견적의 7%)" v={formatKRW(fee)} strong />
             <Row k="청소 총액" v="방문·상담 후 협의" />
           </div>
           <p className="mt-4 rounded-xl bg-cream px-4 py-3 text-left text-xs leading-relaxed text-ink-soft">
@@ -421,7 +422,7 @@ export default function BookPage() {
                         방문·상담 후 협의
                       </p>
                       <p className="mt-1 text-[11px] text-ink-soft">
-                        온라인 결제: 예약금 {formatKRW(DEPOSIT)}
+                        온라인 결제: 예약금 (견적의 7%)
                       </p>
                     </button>
                   ))}
@@ -834,7 +835,7 @@ export default function BookPage() {
               </Field>
 
               <Field title="결제 정보">
-                {/* 온라인 결제 = 예약금 30,000원 고정 (강조) */}
+                {/* 온라인 결제 = 손길 수수료 = 견적의 7% (강조) */}
                 <div className="rounded-2xl border-2 border-brand bg-brand-50 p-5">
                   <p className="text-sm font-bold text-brand-700">
                     온라인 결제 상품 · 손길 청소 예약금
@@ -842,11 +843,11 @@ export default function BookPage() {
                   <div className="mt-1 flex items-end justify-between">
                     <span className="font-bold text-ink">지금 결제하는 금액</span>
                     <span className="text-3xl font-black text-brand">
-                      {formatKRW(DEPOSIT)}
+                      {formatKRW(fee)}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-brand-700/80">
-                    예약 확정 및 청소 파트너 배정을 위한 예약금 (고정 금액)
+                    예약 확정 및 청소 파트너 배정을 위한 예약금 (견적의 7%)
                   </p>
                 </div>
 
@@ -928,7 +929,7 @@ export default function BookPage() {
                           </button>
                         </div>
                         <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-ink-soft">
-                          위 계좌로 예약금 <b>{formatKRW(DEPOSIT)}</b>을 입금해 주세요.
+                          위 계좌로 예약금 <b>{formatKRW(fee)}</b>을 입금해 주세요.
                           입금자명은 예약자 성함({customerName || "예약자명"})으로 부탁드립니다.
                           입금이 확인되면 예약이 확정됩니다.
                         </p>
@@ -970,7 +971,7 @@ export default function BookPage() {
                   <ConsentCheck
                     checked={agreeDeposit}
                     onChange={setAgreeDeposit}
-                    label={`온라인 결제 금액은 청소 전체 비용이 아닌 예약금 ${formatKRW(DEPOSIT)}임을 확인했습니다.`}
+                    label={`온라인 결제 금액은 청소 전체 비용이 아닌 예약금 ${formatKRW(fee)}(견적의 7%)임을 확인했습니다.`}
                   />
                   <ConsentCheck
                     checked={agreeTotal}
@@ -1019,8 +1020,8 @@ export default function BookPage() {
                 {paying
                   ? "결제 진행 중…"
                   : payMethod === "transfer"
-                    ? `예약금 ${formatKRW(DEPOSIT)} 입금하고 예약하기`
-                    : `예약금 ${formatKRW(DEPOSIT)} 결제하고 예약하기`}
+                    ? `예약금 ${formatKRW(fee)} 입금하고 예약하기`
+                    : `예약금 ${formatKRW(fee)} 결제하고 예약하기`}
               </button>
               {!allAgreed && (
                 <p className="-mt-2 text-center text-xs text-ink-soft">
@@ -1090,8 +1091,8 @@ export default function BookPage() {
                 </div>
               )}
               <div className="mt-3 flex justify-between border-t border-line pt-3">
-                <span className="font-bold text-ink">지금 결제 (예약금)</span>
-                <span className="font-black text-brand">{formatKRW(DEPOSIT)}</span>
+                <span className="font-bold text-ink">지금 결제 (예약금·견적의 7%)</span>
+                <span className="font-black text-brand">{formatKRW(fee)}</span>
               </div>
             </div>
           </div>

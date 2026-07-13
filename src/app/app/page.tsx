@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { APP, COMPANY, DEPOSIT, formatKRW } from "@/lib/data";
+import { APP, COMPANY } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "손길 앱 다운로드 — 손안의 청소 예약",
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 const CUSTOMER_FEATURES = [
-  { icon: "📅", title: "간편 예약", desc: `날짜만 고르면 예약금 ${formatKRW(DEPOSIT)}으로 예약 완료.` },
+  { icon: "📅", title: "간편 예약", desc: `날짜만 고르면 예약금(견적의 7%)으로 예약 완료.` },
   { icon: "🔔", title: "실시간 상태", desc: "접수·업체 배정·청소 완료까지 진행 상황을 바로 확인." },
   { icon: "💬", title: "견적 상담", desc: "카카오톡·전화로 무료 견적 상담을 바로 연결." },
   { icon: "⭐", title: "후기 작성", desc: "청소가 끝나면 사진과 함께 후기를 남길 수 있어요." },
@@ -115,7 +115,7 @@ export default function AppDownloadPage() {
                 </div>
                 <div className="mt-3 rounded-2xl bg-brand p-3 text-center">
                   <p className="text-xs font-bold text-white/90">예약금</p>
-                  <p className="text-lg font-black text-white">{formatKRW(DEPOSIT)}</p>
+                  <p className="text-lg font-black text-white">견적의 7%</p>
                 </div>
               </div>
             </div>

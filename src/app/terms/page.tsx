@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import PolicyLayout, { PolicySection } from "@/components/PolicyLayout";
-import { formatKRW, DEPOSIT } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "이용약관 — 손길",
@@ -22,7 +21,7 @@ const ARTICLES: { title: string; body: string }[] = [
   },
   {
     title: "제4조 결제",
-    body: `고객은 예약 확정을 위해 예약금 ${formatKRW(DEPOSIT)}을 온라인으로 결제합니다. 온라인 결제 금액은 청소 전체 비용이 아니라 예약 확정 및 파트너 배정을 위한 예약금입니다. 청소 완료 후 잔금은 현장에서 결제합니다.`,
+    body: `고객은 예약 확정을 위해 예약금(견적 금액의 7%)을 온라인으로 결제합니다. 온라인 결제 금액은 청소 전체 비용이 아니라 예약 확정 및 파트너 배정을 위한 손길 플랫폼 수수료입니다. 청소 완료 후 잔금은 현장에서 파트너에게 결제합니다.`,
   },
   {
     title: "제5조 예약 확정",

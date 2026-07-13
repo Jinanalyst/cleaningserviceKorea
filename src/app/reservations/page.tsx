@@ -12,7 +12,7 @@ import {
   formatKRW,
   formatProperty,
   propertyLabelOf,
-  DEPOSIT,
+  platformFee,
   type ReservationStatus,
   type PropertyInfo,
 } from "@/lib/data";
@@ -201,13 +201,13 @@ function ReservationCard({ r }: { r: Reservation }) {
         <div className="mt-5 flex items-center justify-between rounded-2xl bg-brand-50 px-5 py-4">
           <div>
             <p className="text-xs text-brand-700">결제 완료 (예약금)</p>
-            <p className="text-lg font-black text-brand">{formatKRW(r.deposit ?? DEPOSIT)}</p>
+            <p className="text-lg font-black text-brand">{formatKRW(r.deposit ?? platformFee(r.agreedPrice ?? r.price))}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-ink-soft">현장 잔금</p>
             <p className="font-bold text-ink">
               {r.agreedPrice != null
-                ? formatKRW(Math.max(0, r.agreedPrice - (r.deposit ?? DEPOSIT)))
+                ? formatKRW(Math.max(0, r.agreedPrice - (r.deposit ?? platformFee(r.agreedPrice ?? r.price))))
                 : "상담 후 협의"}
             </p>
           </div>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import PolicyLayout, { CalloutBox, PolicySection } from "@/components/PolicyLayout";
-import { DEPOSIT, SERVICE_INFO, formatKRW } from "@/lib/data";
+import { SERVICE_INFO } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "서비스 상세정보 — 손길",
@@ -15,7 +15,7 @@ export default function ServiceInfoPage() {
     >
       <PolicySection heading="손길은 어떤 서비스인가요?">
         <p>
-          고객은 온라인에서 예약금 {formatKRW(DEPOSIT)}을 결제하여 예약을 확정하고, 청소
+          고객은 온라인에서 예약금(견적 금액의 7%)을 결제하여 예약을 확정하고, 청소
           완료 후 잔금은 현장에서 파트너에게 직접 결제합니다.
         </p>
         <p>
@@ -41,7 +41,7 @@ export default function ServiceInfoPage() {
                 </li>
                 <li>
                   · 온라인 결제:{" "}
-                  <b className="text-brand">예약금 {formatKRW(DEPOSIT)}</b>
+                  <b className="text-brand">예약금 (견적의 7%)</b>
                 </li>
               </ul>
             </li>
@@ -51,7 +51,7 @@ export default function ServiceInfoPage() {
 
       <CalloutBox>
         청소 총액은 공간 크기, 오염도, 짐 유무, 추가 요청사항에 따라 달라지며 방문·상담
-        후 협의로 확정됩니다. 온라인 결제는 예약금 {formatKRW(DEPOSIT)}으로 고정되며,
+        후 협의로 확정됩니다. 온라인 결제는 예약금(견적 금액의 7%)이며,
         잔금은 청소 완료 후 현장에서 결제합니다.
       </CalloutBox>
     </PolicyLayout>

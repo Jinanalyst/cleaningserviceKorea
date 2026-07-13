@@ -38,16 +38,16 @@ values
    '김서연', '010-2345-6789', '서울 마포구 월드컵북로 120', '302동 1104호',
    '고양이 두 마리가 있어요. 베란다 창틀 부탁드려요.',
    '{"propertyType":"아파트","rooms":"방 3개","bathrooms":"2개","hasPet":true,"floorInfo":"11층, 엘리베이터 있음"}'::jsonb,
-   96000, 30000, 'paid', 'confirmed'),
+   96000, 6700, 'paid', 'confirmed'),
   ('SG-B4H9XR', '2026-06-29T09:40:00Z', 'kkalkkeum', 'movein', 32, '2026-07-05', '09:00',
    '이준호', '010-8765-4321', '경기 성남시 분당구 판교로 255', '빌라 2층',
    '이사 들어가기 전날이라 오전에 꼭 마무리돼야 해요.',
    '{"propertyType":"빌라·연립","rooms":"방 3개","bathrooms":"2개","hasPet":false,"floorInfo":"2층, 엘리베이터 없음"}'::jsonb,
-   288000, 30000, 'paid', 'pending'),
+   288000, 20200, 'paid', 'pending'),
   ('SG-T3N8WC', '2026-06-25T05:20:00Z', 'sonkkeut', 'home', 9, '2026-06-30', '15:00',
    '박민지', '010-5555-1212', '서울 관악구 봉천로 45', '원룸 501호', '',
    '{"propertyType":"원룸","rooms":"원룸","bathrooms":"1개","hasPet":false,"floorInfo":"5층, 엘리베이터 있음"}'::jsonb,
-   60000, 30000, 'paid', 'completed')
+   60000, 4200, 'paid', 'completed')
 on conflict (id) do nothing;
 
 

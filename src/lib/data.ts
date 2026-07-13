@@ -307,11 +307,13 @@ export const PARTIAL_AREAS = [
   "방충망",
 ];
 
-export const DEPOSIT = 30000; // 선결제 예약금 (고정)
+// 손길 플랫폼 수수료(=선결제 예약금)는 견적의 7%. 계산 로직은 lib/pricing 의
+// platformFee() 를 사용한다. (FEE_RATE·FEE_PERCENT·platformFee 재노출)
+export { FEE_RATE, FEE_PERCENT, platformFee } from "./pricing";
 
-// 온라인 결제 = 예약금 30,000원 고정. 견적 전액 결제가 아님을 명확히 안내하는 공통 문구.
+// 온라인 결제 = 견적의 7% (손길 수수료). 견적 전액 결제가 아님을 명확히 안내하는 공통 문구.
 export const PAYMENT_NOTICE =
-  "온라인 결제 금액은 청소 전체 비용이 아닌 예약 확정을 위한 예약금 30,000원입니다. 청소 총액은 공간 크기, 오염도, 추가 요청사항에 따라 달라질 수 있으며, 잔금은 청소 완료 후 현장에서 결제합니다.";
+  "온라인 결제 금액은 청소 전체 비용이 아닌, 예약 확정을 위한 손길 플랫폼 수수료(견적 금액의 7%)입니다. 청소 총액은 공간 크기, 오염도, 추가 요청사항에 따라 달라질 수 있으며, 잔금은 청소 완료 후 현장에서 파트너에게 결제합니다.";
 
 // PG 심사·정책 페이지·푸터에서 공통으로 쓰는 사업자/서비스 정보.
 export const COMPANY = {
@@ -339,7 +341,7 @@ export const SITE_URL = (
 // apk 파일은 public/ 에 위치. 새 버전 배포 시 앱을 재빌드해 public/songil-app.apk 교체.
 export const APP = {
   apk: "/songil-app.apk",
-  version: "1.0.5",
+  version: "1.0.8",
   androidReady: true,
   iosReady: false,
 } as const;

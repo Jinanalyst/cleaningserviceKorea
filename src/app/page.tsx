@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PARTNERS, SERVICES, DEPOSIT, formatKRW } from "@/lib/data";
+import { PARTNERS, SERVICES } from "@/lib/data";
 import { readApprovedPartners } from "@/lib/applicationStore";
 import PartnerCard from "@/components/PartnerCard";
 import LiveBookings from "@/components/LiveBookings";
@@ -32,7 +32,7 @@ export default async function Home() {
             </h1>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-soft">
               날짜만 고르면 끝. 손길이 신뢰할 수 있는 청소 업체를 연결하고,
-              예약금 {formatKRW(DEPOSIT)}으로 일정을 잡아드려요.
+              예약금(견적의 7%)으로 일정을 잡아드려요.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
@@ -74,7 +74,7 @@ export default async function Home() {
               <div className="mt-5 rounded-2xl bg-cream p-4">
                 <p className="text-xs text-ink-soft">지금 예약하면</p>
                 <p className="mt-0.5 text-lg font-black text-ink">
-                  예약금 {formatKRW(DEPOSIT)}으로 확정
+                  예약금(견적의 7%)으로 확정
                 </p>
                 <p className="mt-1 text-xs text-ink-soft">잔금은 청소 완료 후 현장 결제</p>
               </div>
@@ -156,7 +156,7 @@ export default async function Home() {
           <span className="text-base">ⓘ</span>
           <p>
             <b className="text-ink">청소 금액은 방문·상담 후 협의</b>로 정해요. 평수, 오염도,
-            작업 범위에 따라 달라질 수 있으며, 온라인 결제는 예약금 3만원으로 고정되고
+            작업 범위에 따라 달라질 수 있으며, 온라인 결제는 예약금(견적의 7%)이고
             잔금은 청소 완료 후 현장에서 결제합니다.
           </p>
         </div>
@@ -174,7 +174,7 @@ export default async function Home() {
             <Step n={1} title="서비스 선택" desc="가정·입주·사무실 중 필요한 청소를 골라요." />
             <Step n={2} title="날짜 선택" desc="캘린더에서 원하는 방문 날짜와 시간을 정해요." />
             <Step n={3} title="정보 입력" desc="연락처와 주소, 요청사항을 남겨주세요." />
-            <Step n={4} title="예약금 결제" desc={`${formatKRW(DEPOSIT)} 선결제로 예약이 확정돼요.`} />
+            <Step n={4} title="예약금 결제" desc="견적의 7% 선결제로 예약이 확정돼요." />
           </div>
         </div>
       </section>
@@ -196,7 +196,7 @@ export default async function Home() {
 
           <div className="mt-8 grid gap-5 sm:grid-cols-3">
             <InfoCard emoji="💳" title="예약 & 결제">
-              온라인에서 <b className="text-ink">예약금 {formatKRW(DEPOSIT)}</b>을 결제하면
+              온라인에서 <b className="text-ink">예약금(견적의 7%)</b>을 결제하면
               예약이 확정돼요. 청소 완료 후 <b className="text-ink">잔금은 현장</b>에서 파트너
               업체에 직접 결제합니다.
             </InfoCard>
@@ -280,7 +280,7 @@ export default async function Home() {
               오늘, 조금 더 가벼운 하루를 시작해요
             </h2>
             <p className="mx-auto mt-3 max-w-md text-brand-100">
-              예약금 {formatKRW(DEPOSIT)}이면 충분해요. 나머지는 손길이 챙길게요.
+              예약금은 견적의 7%면 충분해요. 나머지는 손길이 챙길게요.
             </p>
             <Link
               href="/book"

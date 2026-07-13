@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import PolicyLayout, { CalloutBox, PolicySection } from "@/components/PolicyLayout";
-import { COMPANY, DEPOSIT, formatKRW } from "@/lib/data";
+import { COMPANY } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "환불정책 — 손길",
-  description: "손길의 예약금 30,000원 기준 환불 정책 안내입니다.",
+  description: "손길의 예약금(견적 금액의 7%) 기준 환불 정책 안내입니다.",
 };
 
 const RULES = [
@@ -21,7 +21,7 @@ export default function RefundPolicyPage() {
   return (
     <PolicyLayout
       title="환불정책"
-      intro={`손길의 온라인 결제 금액은 청소 예약 확정을 위한 예약금 ${formatKRW(DEPOSIT)}입니다. 환불은 예약금 ${formatKRW(DEPOSIT)}을 기준으로 처리됩니다.`}
+      intro={`손길의 온라인 결제 금액은 청소 예약 확정을 위한 예약금(견적 금액의 7%)입니다. 환불은 결제한 예약금을 기준으로 처리됩니다.`}
     >
       <PolicySection heading="환불 기준">
         <ol className="space-y-3">

@@ -92,6 +92,19 @@ export type EstimateBreakdown = {
   final: number;
 };
 
+// ── 손길 플랫폼 수수료 ─────────────────────────────────────────────
+// 온라인으로 선결제하는 예약금 = 손길이 가져가는 플랫폼 수수료.
+// 최종 견적의 7%를 100원 단위로 반올림하며, 나머지 금액(잔금)은
+// 청소 완료 후 현장에서 파트너 업체에 직접 결제한다.
+export const FEE_RATE = 0.07; // 손길 플랫폼 수수료율 (견적의 7%)
+export const FEE_PERCENT = 7; // 표기용 (%)
+
+// 손길 수수료(예약금) = 최종 견적 × 7%, 100원 단위 반올림
+export function platformFee(total: number): number {
+  if (!total || total <= 0) return 0;
+  return Math.round((total * FEE_RATE) / 100) * 100;
+}
+
 // 최종견적 = 기본견적 × 난이도 × 주거유형 × 일정 + 옵션비 (1,000원 단위 반올림)
 export function computeEstimate(input: EstimateInput): EstimateBreakdown {
   const base = baseEstimate(input.pyeong);
