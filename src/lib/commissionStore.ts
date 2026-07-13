@@ -164,6 +164,47 @@ async function ensureRelation(t: {
   return data ? fromRelationRow(data as Record<string, unknown>) : null;
 }
 
+// 가입/추천링크 시점에 추천 관계를 "즉시" 귀속한다.
+//   • profiles.referred_by 를 최초 1회만 기록(이미 있으면 변경하지 않는다 — 최초 추천자 우선).
+//   • 고객 추천 관계(referral_relations)를 바로 만들어, 추천인 대시보드의 "추천 실적"에
+//     예약 전이라도 "첫 거래 대기"로 표시되게 한다.
+//   본인추천(추천코드 주인 == 본인)·유효하지 않은 코드는 무시한다. 멱등.
+export async function attachReferral(
+  userId: string,
+  code: string,
+  name?: string | null
+): Promise<{ attached: boolean }> {
+  const supabase = getSupabase();
+  const { data: prof } = await supabase
+    .from(PROFILES)
+    .select("referred_by")
+    .eq("id", userId)
+    .maybeSingle();
+
+  // 이미 귀속돼 있으면 그 코드를 쓰고, 없으면 이번 유입 코드로 최초 귀속.
+  let refCode = normalizeCode(prof?.referred_by);
+  if (!refCode) {
+    const incoming = normalizeCode(code);
+    if (!incoming) return { attached: false };
+    const owner = await referrerUserIdByCode(incoming);
+    if (!owner || owner === userId) return { attached: false }; // 무효/본인추천
+    await supabase.from(PROFILES).update({ referred_by: incoming }).eq("id", userId);
+    refCode = incoming;
+  }
+
+  const owner = await referrerUserIdByCode(refCode);
+  if (!owner || owner === userId) return { attached: false };
+
+  await ensureRelation({
+    referrerCode: refCode,
+    referrerUserId: owner,
+    referredType: "customer",
+    referredKey: "cust:" + userId,
+    referredName: name ?? "",
+  });
+  return { attached: true };
+}
+
 // 관계의 정상 커미션 집계를 다시 계산해 캐시 컬럼을 갱신한다.
 async function recomputeRelation(relationId: string): Promise<void> {
   const { data } = await getSupabase()
@@ -277,8 +318,16 @@ export async function accrueCompletion(res: Reservation): Promise<void> {
     referrerUserId: string;
   }[] = [];
 
-  // 1) 고객 추천 — 예약에 실린 유입 추천코드.
-  const custCode = normalizeCode(res.referrerCode);
+  // 1) 고객 추천 — 예약에 실린 유입 추천코드. 없으면 가입 시 귀속된 계정의 referred_by 로 폴백.
+  let custCode = normalizeCode(res.referrerCode);
+  if (!custCode && res.userId) {
+    const { data: prof } = await getSupabase()
+      .from(PROFILES)
+      .select("referred_by")
+      .eq("id", res.userId)
+      .maybeSingle();
+    custCode = normalizeCode(prof?.referred_by);
+  }
   if (custCode) {
     const refUser = await referrerUserIdByCode(custCode);
     if (refUser && refUser !== res.userId) {

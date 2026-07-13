@@ -3,6 +3,7 @@ import { Noto_Sans_KR } from "next/font/google";
 import Link from "next/link";
 import AuthButtons from "@/components/AuthButtons";
 import RefCapture from "@/components/RefCapture";
+import RefAttach from "@/components/RefAttach";
 import { COMPANY, SITE_URL } from "@/lib/data";
 import "./globals.css";
 
@@ -213,6 +214,7 @@ export default function RootLayout({
     <html lang="ko" className={`${noto.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
         <RefCapture />
+        <RefAttach />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
