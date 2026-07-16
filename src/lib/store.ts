@@ -208,6 +208,54 @@ export async function updateStatus(
   return updateReservation(id, { status });
 }
 
+// 특정 (업체·날짜·시간) 슬롯이 이미 다른 예약에 잡혀 있는지 확인.
+// 취소된 예약과 자기 자신(exceptId)은 제외한다. 고객 일정 변경 시 충돌 방지용.
+export async function isSlotTaken(
+  partnerId: string,
+  date: string,
+  timeSlot: string,
+  exceptId?: string
+): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .select("id")
+    .eq("partner_id", partnerId)
+    .eq("date", date)
+    .eq("time_slot", timeSlot)
+    .neq("status", "cancelled");
+  if (error) throw new Error(error.message);
+  return (data ?? []).some((r) => (r.id as string) !== exceptId);
+}
+
+// 고객 일정 변경 — 방문 날짜·시간대만 갱신한다. (소유·상태·충돌 검증은 라우트에서)
+export async function rescheduleReservation(
+  id: string,
+  date: string,
+  timeSlot: string
+): Promise<Reservation | null> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .update({ date, time_slot: timeSlot })
+    .eq("id", id)
+    .select("*")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return fromRow(data as Row);
+}
+
+// 예약 하드 삭제 — 관리자·배정 업체가 "청소 완료" 건을 목록에서 제거할 때 사용.
+// (권한·상태 검증은 라우트에서 처리한다.) 삭제되면 true.
+export async function deleteReservation(id: string): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from(TABLE)
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
+}
+
 // 배정 업체가 앱에서 보낸 견적을 서버에 기록 (파트너 견적 동기화).
 export async function setPartnerQuote(
   id: string,

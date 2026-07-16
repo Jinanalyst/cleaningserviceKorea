@@ -159,6 +159,29 @@ export default function AdminPage() {
     await patchReservation(id, { status });
   }
 
+  // 청소 완료된 예약을 목록에서 영구 삭제.
+  async function removeReservation(id: string) {
+    if (
+      !window.confirm(
+        "이 완료된 예약을 목록에서 영구 삭제할까요? 되돌릴 수 없어요."
+      )
+    ) {
+      return;
+    }
+    setUpdating(id);
+    try {
+      const res = await fetch(`/api/reservations/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setRows((prev) => prev.filter((r) => r.id !== id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "삭제에 실패했어요.");
+      }
+    } finally {
+      setUpdating(null);
+    }
+  }
+
   function saveAgreedPrice(id: string) {
     const digits = (priceDraft[id] ?? "").replace(/[^\d]/g, "");
     patchReservation(id, { agreedPrice: digits ? Number(digits) : null });
@@ -351,6 +374,15 @@ export default function AdminPage() {
                   >
                     {isOpen ? "관리 닫기" : "업체 배정·가격·소통"}
                   </button>
+                  {r.status === "completed" && (
+                    <button
+                      onClick={() => removeReservation(r.id)}
+                      disabled={updating === r.id}
+                      className="rounded-full bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100 disabled:opacity-40"
+                    >
+                      🗑 삭제
+                    </button>
+                  )}
                 </div>
 
                 {/* 예약금(수수료 7%) 입금 확인 — 항상 표시 */}
