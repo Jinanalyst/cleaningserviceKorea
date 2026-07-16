@@ -216,7 +216,7 @@ export default function PartnerApplyPage() {
       <div className="mt-8 space-y-8">
         <Section title="업체 정보" icon="🏢">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="업체명" value={companyName} onChange={setCompanyName} placeholder="예: 반짝살림" />
+            <Input label="업체명" value={companyName} onChange={setCompanyName} placeholder="예: OO클린" />
             <Input label="대표자명" value={ownerName} onChange={setOwnerName} placeholder="홍길동" />
             <Input
               label="사업자등록번호"

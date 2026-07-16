@@ -6,13 +6,13 @@ type Booking = { emoji: string; title: string; who: string; time: string };
 
 // 순환할 예약 풀 (실시간 피드처럼 계속 돌아감)
 const POOL: Booking[] = [
-  { emoji: "🏠", title: "가정 정기청소", who: "반짝살림", time: "수 13:00" },
-  { emoji: "📦", title: "입주청소", who: "깔끔한하루", time: "금 09:00" },
-  { emoji: "🔑", title: "원룸 퇴거청소", who: "손끝청소", time: "토 11:00" },
-  { emoji: "🏢", title: "사무실·상가청소", who: "맑은창", time: "월 07:00" },
-  { emoji: "🚚", title: "이사청소", who: "깔끔한하루", time: "화 10:00" },
-  { emoji: "🏙️", title: "오피스텔 청소", who: "맑은창", time: "목 15:00" },
-  { emoji: "🧽", title: "부분 청소", who: "반짝살림", time: "일 14:00" },
+  { emoji: "🏠", title: "가정 정기청소", who: "📍 서울 강남구", time: "수 13:00" },
+  { emoji: "📦", title: "입주청소", who: "📍 성남 분당구", time: "금 09:00" },
+  { emoji: "🔑", title: "원룸 퇴거청소", who: "📍 서울 서초구", time: "토 11:00" },
+  { emoji: "🏢", title: "사무실·상가청소", who: "📍 서울 강남구", time: "월 07:00" },
+  { emoji: "🚚", title: "이사청소", who: "📍 성남 분당구", time: "화 10:00" },
+  { emoji: "🏙️", title: "오피스텔 청소", who: "📍 서울 송파구", time: "목 15:00" },
+  { emoji: "🧽", title: "부분 청소", who: "📍 서울 서초구", time: "일 14:00" },
 ];
 
 const VISIBLE = 3;
