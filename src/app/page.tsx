@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PARTNERS, SERVICES } from "@/lib/data";
 import { readApprovedPartners } from "@/lib/applicationStore";
 import PartnerCard from "@/components/PartnerCard";
-import LiveBookings from "@/components/LiveBookings";
+import AppFlowMock from "@/components/AppFlowMock";
 
 // 승인 파트너 목록이 주기적으로 갱신되도록 (최대 5분 캐시)
 export const revalidate = 300;
@@ -55,30 +55,9 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Hero 카드 일러스트 */}
+          {/* Hero — 앱 예약 과정 모션 목업 */}
           <div className="relative animate-rise [animation-delay:120ms]">
-            <div className="absolute -left-6 -top-6 h-24 w-24 rounded-full bg-mint-soft blur-2xl" />
-            <div className="absolute -bottom-8 -right-4 h-32 w-32 rounded-full bg-brand-100 blur-2xl" />
-            <div className="relative rounded-[2rem] border border-line bg-white/90 p-6 shadow-xl backdrop-blur">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-ink-soft">이번 주 예약 현황</p>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-600">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand" />
-                  </span>
-                  실시간
-                </span>
-              </div>
-              <LiveBookings />
-              <div className="mt-5 rounded-2xl bg-cream p-4">
-                <p className="text-xs text-ink-soft">지금 예약하면</p>
-                <p className="mt-0.5 text-lg font-black text-ink">
-                  예약금(견적의 7%)으로 확정
-                </p>
-                <p className="mt-1 text-xs text-ink-soft">잔금은 청소 완료 후 현장 결제</p>
-              </div>
-            </div>
+            <AppFlowMock />
           </div>
         </div>
       </section>
