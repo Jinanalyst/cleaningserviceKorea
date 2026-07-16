@@ -1,22 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /*
-  히어로 우측 — 손길 앱에서 예약하는 과정을 휴대폰 프레임 안에서
-  자동으로 재생하는 모션 목업. (가짜 실시간 예약 현황을 대체)
-  실제 예약 흐름(서비스 → 날짜·시간 → 정보 입력 → 예약금 결제 → 완료)과 동일.
+  히어로 우측 — 손길 앱의 실제 예약 화면(songil-app/src/screens/Book.tsx)을
+  그대로 재현해 휴대폰 프레임 안에서 자동 재생하는 모션 목업.
+  앱과 동일한 5단계: 서비스 → 공간 정보 → 날짜·업체 → 정보 입력 → 예약금 결제 → 완료.
+  스타일은 globals.css 의 `.appmock` 스코프(앱 styles.css 이식)와 100% 일치.
 */
 
-const STEP_LABELS = ["서비스 선택", "날짜·시간", "정보 입력", "예약금 결제", "예약 완료"];
-const SCREEN_COUNT = STEP_LABELS.length;
-const DWELL = 3000; // 각 화면 유지 시간
-const TAP_AT = 2350; // 탭 리플이 뜨는 시점
+const STEPS = ["서비스", "공간 정보", "날짜·업체", "정보 입력", "예약금 결제"];
+const SCREEN_COUNT = STEPS.length + 1; // + 완료
+const DWELL = 3200;
+
+// 375px 논리폭을 폰 프레임 안쪽 폭(280px)에 맞춰 축소
+const LOGICAL_W = 375;
+const FRAME_INNER_W = 280;
+const SCALE = FRAME_INNER_W / LOGICAL_W;
+const SCREEN_H = 560; // 폰 화면(뷰포트) 시각 높이
 
 export default function AppFlowMock() {
   const [step, setStep] = useState(0);
-  const [tap, setTap] = useState(false);
-  const tapTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (
@@ -25,112 +29,77 @@ export default function AppFlowMock() {
     ) {
       return; // 모션 최소화 설정이면 첫 화면만 표시
     }
-
-    const advance = setInterval(() => {
-      setStep((s) => (s + 1) % SCREEN_COUNT);
-      setTap(false);
-    }, DWELL);
-
-    return () => clearInterval(advance);
+    const t = setInterval(() => setStep((s) => (s + 1) % SCREEN_COUNT), DWELL);
+    return () => clearInterval(t);
   }, []);
 
-  // 화면이 바뀔 때마다 "다음 버튼 탭" 리플을 예약
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
-    if (tapTimer.current) window.clearTimeout(tapTimer.current);
-    // 마지막(완료) 화면에서는 탭 없음
-    if (step < SCREEN_COUNT - 1) {
-      tapTimer.current = window.setTimeout(() => setTap(true), TAP_AT);
-    }
-    return () => {
-      if (tapTimer.current) window.clearTimeout(tapTimer.current);
-    };
-  }, [step]);
+  const done = step >= STEPS.length;
 
   return (
-    <div className="relative mx-auto w-full max-w-[320px]">
+    <div className="relative mx-auto w-[300px] max-w-full">
       {/* 배경 광선 */}
       <div className="absolute -left-8 -top-6 h-24 w-24 rounded-full bg-mint-soft blur-2xl" />
       <div className="absolute -bottom-10 -right-6 h-32 w-32 rounded-full bg-brand-100 blur-2xl" />
 
       {/* 휴대폰 프레임 */}
-      <div className="relative rounded-[2.6rem] border border-ink/10 bg-ink p-2.5 shadow-2xl shadow-ink/20">
-        <div className="relative aspect-[9/18.2] overflow-hidden rounded-[2.1rem] bg-cream">
+      <div className="relative rounded-[2.6rem] border border-ink/10 bg-ink p-2.5 shadow-2xl shadow-ink/25">
+        <div
+          className="relative overflow-hidden rounded-[2.1rem] bg-cream"
+          style={{ height: SCREEN_H }}
+        >
           {/* 노치 */}
-          <div className="absolute left-1/2 top-0 z-20 h-5 w-28 -translate-x-1/2 rounded-b-2xl bg-ink" />
+          <div className="absolute left-1/2 top-0 z-20 h-4 w-24 -translate-x-1/2 rounded-b-2xl bg-ink" />
 
-          {/* 상태바 */}
-          <div className="flex items-center justify-between px-6 pt-2.5 text-[10px] font-bold text-ink">
-            <span>9:41</span>
-            <span className="flex items-center gap-1 text-ink-soft">
-              <span>●●●</span>
-              <span>📶</span>
-              <span>🔋</span>
-            </span>
-          </div>
-
-          {/* 앱 헤더 */}
-          <div className="flex items-center gap-2 px-4 pb-2 pt-2">
-            <span className="text-sm text-ink-soft">‹</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mark.png" alt="" aria-hidden="true" className="h-5 w-5" />
-            <p className="text-sm font-black text-ink">청소 예약</p>
-            <span className="ml-auto text-xs text-ink-soft">
-              {Math.min(step + 1, 4)}/4
-            </span>
-          </div>
-
-          {/* 진행 바 */}
-          <div className="flex gap-1 px-4 pb-2">
-            {[0, 1, 2, 3].map((i) => (
-              <span
-                key={i}
-                className={[
-                  "h-1 flex-1 rounded-full transition-colors duration-500",
-                  i <= Math.min(step, 3) ? "bg-brand" : "bg-line",
-                ].join(" ")}
-              />
-            ))}
-          </div>
-
-          {/* 화면 본문 */}
-          <div className="relative px-4 pt-1">
-            <div key={step} className="animate-screen">
-              <Screen step={step} />
+          {/* 스케일된 앱 화면 (실제 앱 마크업) */}
+          <div
+            key={step}
+            className="appmock animate-screen absolute left-0 top-0"
+            style={{
+              width: LOGICAL_W,
+              transform: `scale(${SCALE})`,
+              transformOrigin: "top left",
+            }}
+          >
+            {/* 상태바 */}
+            <div className="mockstatus">
+              <span>9:41</span>
+              <span style={{ letterSpacing: "1px" }}>••• 📶 🔋</span>
             </div>
-          </div>
-
-          {/* 하단 CTA + 탭 리플 */}
-          <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-3">
-            <div className="relative">
-              <button
-                type="button"
-                tabIndex={-1}
-                aria-hidden="true"
-                className={[
-                  "pointer-events-none w-full rounded-full py-2.5 text-center text-xs font-black text-white shadow-lg",
-                  step >= SCREEN_COUNT - 1 ? "bg-mint" : "bg-brand shadow-brand/30",
-                  tap ? "animate-press" : "",
-                ].join(" ")}
-              >
-                {CTA_LABELS[step]}
-              </button>
-              {tap && (
-                <span className="pointer-events-none absolute left-1/2 top-1/2 h-16 w-16 rounded-full bg-white animate-tap" />
-              )}
+            {/* 앱바 */}
+            <div className="appbar">
+              <span className="back">‹</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark.png" alt="" aria-hidden="true" className="logo" />
+              <span className="title">청소 예약</span>
             </div>
+
+            {done ? (
+              <DoneScreen />
+            ) : (
+              <>
+                {/* 스텝바 */}
+                <div className="stepbar">
+                  {STEPS.map((_, i) => (
+                    <span key={i} className={`seg${i <= step ? " on" : ""}`} />
+                  ))}
+                </div>
+                <div className="pad">
+                  <p className="eyebrow">
+                    STEP {step + 1} / {STEPS.length} · {STEPS[step]}
+                  </p>
+                  <Screen step={step} />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* 프레임 하단 캡션 */}
       <p className="mt-4 text-center text-xs font-medium text-ink-soft">
-        <span className="font-bold text-brand">앱에서 {STEP_LABELS[step]}</span>
+        <span className="font-bold text-brand">
+          앱에서 {done ? "예약 완료" : STEPS[step]}
+        </span>
         <span className="mx-1.5 text-line">·</span>
         30초면 예약 끝
       </p>
@@ -138,56 +107,138 @@ export default function AppFlowMock() {
   );
 }
 
-const CTA_LABELS = [
-  "다음",
-  "다음",
-  "다음",
-  "예약금 결제하기",
-  "내 예약 확인하기",
-];
-
 function Screen({ step }: { step: number }) {
   switch (step) {
     case 0:
-      return <ServiceScreen />;
+      return <ServiceStep />;
     case 1:
-      return <DateScreen />;
+      return <SpaceStep />;
     case 2:
-      return <InfoScreen />;
+      return <DateStep />;
     case 3:
-      return <PayScreen />;
+      return <InfoStep />;
     default:
-      return <DoneScreen />;
+      return <PayStep />;
   }
 }
 
-/* 1) 서비스 선택 */
-function ServiceScreen() {
-  const services = [
-    { emoji: "🏠", name: "가정 정기청소", sel: true },
-    { emoji: "📦", name: "입주청소", sel: false },
-    { emoji: "🚚", name: "이사청소", sel: false },
-    { emoji: "🔑", name: "원룸 퇴거청소", sel: false },
-  ];
+/* STEP 1 — 서비스 + 평수 */
+const SERVICES = [
+  { emoji: "🏠", name: "가정 정기청소", blurb: "주방·화장실·거실까지 생활공간을 구석구석 정돈해 드려요.", duration: "3~4시간", min: "60,000원" },
+  { emoji: "📦", name: "입주청소", blurb: "빈집 상태에서 새집처럼. 사람 살기 전 바닥부터 완벽하게.", duration: "5~7시간", min: "150,000원" },
+  { emoji: "🚚", name: "이사청소", blurb: "이사 나가는 날, 짐 뺀 자리까지 원상복구로 마무리해요.", duration: "4~6시간", min: "120,000원" },
+  { emoji: "🔑", name: "원룸 퇴거청소", blurb: "보증금 걱정 없이 깔끔하게. 원룸·소형 평수 퇴실 청소.", duration: "2~3시간", min: "90,000원" },
+];
+
+function ServiceStep() {
   return (
-    <div>
-      <p className="text-[13px] font-black text-ink">어떤 청소가 필요하세요?</p>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {services.map((s) => (
+    <div className="stack" style={{ marginTop: 14 }}>
+      <h2 className="title-lg">어떤 청소가 필요하세요?</h2>
+      {SERVICES.map((s, i) => {
+        const sel = i === 0;
+        return (
           <div
             key={s.name}
-            className={[
-              "rounded-2xl border p-2.5 text-left transition",
-              s.sel
-                ? "border-brand bg-brand-50 ring-2 ring-brand"
-                : "border-line bg-white",
-            ].join(" ")}
+            className="card card-pad flex gap-12 center"
+            style={{
+              width: "100%",
+              border: sel ? "1px solid var(--brand)" : undefined,
+              background: sel ? "var(--brand-50)" : "#fff",
+            }}
           >
-            <div className="text-lg">{s.emoji}</div>
-            <p className="mt-1 text-[11px] font-bold leading-tight text-ink">
-              {s.name}
-            </p>
-            <p className="mt-1 text-[9px] font-bold text-brand">방문·상담 후 협의</p>
+            <span className="tile">{s.emoji}</span>
+            <span className="grow">
+              <b style={{ display: "block" }}>{s.name}</b>
+              <span className="tiny muted">{s.blurb}</span>
+              <span className="tiny" style={{ display: "block", marginTop: 4 }}>
+                <span className="muted">{s.duration} · 시작</span>{" "}
+                <span className="price">{s.min}~</span>
+              </span>
+            </span>
+            {sel && <span style={{ color: "var(--brand)", fontWeight: 900 }}>✓</span>}
+          </div>
+        );
+      })}
+      <div className="field" style={{ marginBottom: 0 }}>
+        <span className="label">
+          평수<span className="req">*</span>
+        </span>
+        <div className="input">24</div>
+      </div>
+      <div className="notice-info">
+        <span>ⓘ</span>
+        <span>
+          <b>24평 기본 예상 견적</b> <b className="price">96,000원</b>
+          <br />
+          오염 정도·주거 형태·방문 일정·추가 옵션에 따라 최종 견적이 달라져요.
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* STEP 2 — 공간 정보 */
+const PROPERTY_TYPES = ["아파트", "빌라·연립", "오피스텔", "원룸", "단독주택", "기타"];
+const ROOM_OPTIONS = ["원룸", "방 1개", "방 2개", "방 3개", "방 4개+"];
+const BATH_OPTIONS = ["1개", "2개", "3개+"];
+const DIFFICULTY = [
+  { label: "보통", factor: "1" },
+  { label: "오염 많음", factor: "1.2" },
+  { label: "심함", factor: "1.4" },
+];
+const OPTIONS = [
+  { label: "냉장고 내부 청소", price: "+30,000원" },
+  { label: "후드·오븐 청소", price: "+20,000원" },
+];
+
+function SpaceStep() {
+  return (
+    <div style={{ marginTop: 14 }}>
+      <h2 className="title-lg">집 정보</h2>
+      <p className="small" style={{ fontWeight: 700, marginTop: 14 }}>
+        주거 형태 <span style={{ color: "var(--brand)" }}>*</span>
+      </p>
+      <div className="opt-grid" style={{ marginTop: 8 }}>
+        {PROPERTY_TYPES.map((t, i) => (
+          <span key={t} className={`opt${i === 0 ? " sel" : ""}`}>{t}</span>
+        ))}
+      </div>
+      <p className="small" style={{ fontWeight: 700, marginTop: 16 }}>방 개수</p>
+      <div className="opt-grid" style={{ marginTop: 8 }}>
+        {ROOM_OPTIONS.map((t) => (
+          <span key={t} className={`opt${t === "방 2개" ? " sel" : ""}`}>{t}</span>
+        ))}
+      </div>
+      <p className="small" style={{ fontWeight: 700, marginTop: 16 }}>화장실</p>
+      <div className="opt-grid" style={{ marginTop: 8 }}>
+        {BATH_OPTIONS.map((t) => (
+          <span key={t} className={`opt${t === "1개" ? " sel" : ""}`}>{t}</span>
+        ))}
+      </div>
+      <span className="opt" style={{ display: "inline-block", marginTop: 16 }}>
+        🐾 반려동물이 있어요
+      </span>
+      <p className="small" style={{ fontWeight: 700, marginTop: 18 }}>오염 정도</p>
+      <p className="tiny muted" style={{ margin: "2px 0 8px" }}>
+        오염이 심할수록 작업 시간·인력이 늘어 견적에 반영돼요.
+      </p>
+      <div className="opt-grid">
+        {DIFFICULTY.map((d, i) => (
+          <span key={d.label} className={`opt${i === 0 ? " sel" : ""}`}>
+            {d.label}
+            <span className="tiny muted" style={{ marginLeft: 4 }}>×{d.factor}</span>
+          </span>
+        ))}
+      </div>
+      <p className="small" style={{ fontWeight: 700, marginTop: 18 }}>추가 옵션 (선택)</p>
+      <div className="stack-sm" style={{ marginTop: 8 }}>
+        {OPTIONS.map((o) => (
+          <div key={o.label} className="card card-pad flex between center" style={{ width: "100%" }}>
+            <span className="flex center gap-8">
+              <span style={{ color: "var(--line)", fontWeight: 900 }}>☐</span>
+              <span className="small"><b>{o.label}</b></span>
+            </span>
+            <span className="small price">{o.price}</span>
           </div>
         ))}
       </div>
@@ -195,159 +246,221 @@ function ServiceScreen() {
   );
 }
 
-/* 2) 날짜·시간 */
-function DateScreen() {
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
+/* STEP 3 — 날짜·시간·업체 */
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+const TIME_SLOTS = ["09:00", "11:00", "13:00", "15:00", "17:00"];
+
+function DateStep() {
+  // 2026년 7월: 1일 = 수요일(startWeekday=3)
+  const startWeekday = 3;
+  const daysInMonth = 31;
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
   return (
-    <div>
-      <p className="text-[13px] font-black text-ink">언제 방문할까요?</p>
-      <div className="mt-3 rounded-2xl border border-line bg-white p-3">
-        <p className="mb-2 text-center text-[11px] font-bold text-ink">2026년 7월</p>
-        <div className="grid grid-cols-7 gap-1 text-center text-[9px] text-ink-soft">
-          {days.map((d) => (
-            <span key={d}>{d}</span>
-          ))}
-          {Array.from({ length: 31 }, (_, i) => i + 1).map((n) => (
-            <span
-              key={n}
-              className={[
-                "grid aspect-square place-items-center rounded-md text-[9px] font-bold",
-                n === 19
-                  ? "bg-brand text-white"
-                  : n < 12
-                    ? "text-line"
-                    : "text-ink",
-              ].join(" ")}
+    <div style={{ marginTop: 14 }}>
+      <h2 className="title-lg">언제, 어느 업체로?</h2>
+      <p className="small muted" style={{ marginTop: 4 }}>
+        방문 날짜와 시간, 담당 업체를 골라주세요.
+      </p>
+
+      <div className="card lg card-pad" style={{ marginTop: 14 }}>
+        <div className="flex between center">
+          <span style={{ fontSize: "1.3rem", color: "var(--line)", padding: "4px 10px" }}>‹</span>
+          <b style={{ fontSize: "1.05rem" }}>2026년 7월</b>
+          <span style={{ fontSize: "1.3rem", color: "var(--ink)", padding: "4px 10px" }}>›</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginTop: 10 }}>
+          {WEEK.map((w, i) => (
+            <div
+              key={w}
+              className="tiny"
+              style={{
+                textAlign: "center",
+                fontWeight: 700,
+                padding: "4px 0",
+                color: i === 0 ? "var(--rose-600)" : i === 6 ? "var(--brand)" : "var(--ink-soft)",
+              }}
             >
-              {n}
-            </span>
+              {w}
+            </div>
           ))}
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginTop: 4 }}>
+          {cells.map((d, i) => {
+            if (d === null) return <div key={`b${i}`} />;
+            const beforeMin = d < 12; // 오늘+3일 이전 비활성
+            const selected = d === 19;
+            const weekday = (startWeekday + d - 1) % 7;
+            return (
+              <div
+                key={d}
+                style={{
+                  aspectRatio: "1",
+                  borderRadius: 12,
+                  display: "grid",
+                  placeItems: "center",
+                  position: "relative",
+                  background: selected ? "var(--brand)" : "transparent",
+                  color: beforeMin
+                    ? "var(--line)"
+                    : selected
+                      ? "#fff"
+                      : weekday === 0
+                        ? "var(--rose-600)"
+                        : "var(--ink)",
+                  fontWeight: selected ? 800 : 600,
+                  fontSize: "0.9rem",
+                }}
+              >
+                {d}
+                {!beforeMin && !selected && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: 5,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: 5,
+                      height: 5,
+                      borderRadius: 999,
+                      background: d % 5 === 0 ? "var(--amber-400)" : "var(--emerald-400)",
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div className="mt-2.5 flex gap-1.5">
-        {["09:00", "13:00", "15:00"].map((t) => (
-          <span
-            key={t}
-            className={[
-              "flex-1 rounded-lg border py-1.5 text-center text-[10px] font-bold",
-              t === "13:00"
-                ? "border-brand bg-brand text-white"
-                : "border-line bg-white text-ink",
-            ].join(" ")}
-          >
-            {t}
-          </span>
+
+      <p className="small" style={{ fontWeight: 700, marginTop: 18 }}>방문 시간대</p>
+      <div className="opt-grid" style={{ marginTop: 8 }}>
+        {TIME_SLOTS.map((t) => (
+          <span key={t} className={`opt${t === "13:00" ? " sel" : ""}`}>{t}</span>
         ))}
       </div>
-    </div>
-  );
-}
 
-/* 3) 정보 입력 */
-function InfoScreen() {
-  return (
-    <div>
-      <p className="text-[13px] font-black text-ink">예약자 정보를 알려주세요</p>
-      <div className="mt-3 space-y-2">
-        <MockField label="이름" value="김손길" />
-        <MockField label="연락처" value="010-1234-5678" />
-        <MockField label="방문 주소" value="서울 강남구 테헤란로…" typing />
-      </div>
-      <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2">
-        <span className="text-xs">🐾</span>
-        <span className="text-[10px] font-bold text-ink">반려동물이 있어요</span>
-        <span className="ml-auto flex h-4 w-7 items-center rounded-full bg-brand px-0.5">
-          <span className="ml-auto h-3 w-3 rounded-full bg-white" />
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function MockField({
-  label,
-  value,
-  typing,
-}: {
-  label: string;
-  value: string;
-  typing?: boolean;
-}) {
-  return (
-    <div>
-      <p className="mb-1 text-[9px] font-bold text-ink-soft">{label}</p>
-      <div
-        className={[
-          "rounded-lg border bg-white px-2.5 py-1.5 text-[10px] font-medium text-ink",
-          typing ? "border-brand ring-1 ring-brand-100" : "border-line",
-        ].join(" ")}
-      >
-        {value}
-        {typing && (
-          <span className="animate-caret ml-0.5 inline-block h-3 w-px translate-y-0.5 bg-brand" />
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* 4) 예약금 결제 */
-function PayScreen() {
-  return (
-    <div>
-      <p className="text-[13px] font-black text-ink">예약 내용 확인</p>
-      <div className="mt-3 space-y-1.5 rounded-2xl border border-line bg-white p-3 text-[10px]">
-        <PayRow k="서비스" v="🏠 가정 정기청소" />
-        <PayRow k="방문" v="7월 19일 (토) 13:00" />
-        <PayRow k="예약자" v="김손길 · 강남구" />
-      </div>
-      <div className="mt-2.5 rounded-2xl border-2 border-brand bg-brand-50 p-3">
-        <p className="text-[9px] font-bold text-brand-700">
-          온라인 결제 · 예약금 (견적의 7%)
-        </p>
-        <div className="mt-0.5 flex items-end justify-between">
-          <span className="text-[10px] font-bold text-ink">지금 결제</span>
-          <span className="text-lg font-black text-brand">21,000원</span>
+      <p className="small" style={{ fontWeight: 700, marginTop: 18 }}>담당 업체 선택</p>
+      <div className="stack-sm" style={{ marginTop: 8 }}>
+        <div
+          className="card card-pad flex gap-10 center"
+          style={{ width: "100%", border: "1px solid var(--brand)", background: "var(--brand-50)" }}
+        >
+          <span className="avatar acc-violet" style={{ height: 40, width: 40, fontSize: "1rem", borderRadius: 12 }}>
+            청
+          </span>
+          <span className="grow">
+            <b className="small" style={{ display: "block" }}>청소학개론</b>
+            <span className="tiny muted">서울 강남 · 성남 분당</span>
+          </span>
+          <span style={{ color: "var(--brand)", fontWeight: 900 }}>✓</span>
         </div>
-        <p className="mt-1 text-[8px] text-brand-700/80">
-          잔금은 청소 완료 후 현장 결제
-        </p>
       </div>
     </div>
   );
 }
 
-function PayRow({ k, v }: { k: string; v: string }) {
+/* STEP 4 — 정보 입력 */
+function InfoStep() {
   return (
-    <div className="flex justify-between gap-2">
-      <span className="shrink-0 text-ink-soft">{k}</span>
-      <span className="truncate text-right font-bold text-ink">{v}</span>
+    <div style={{ marginTop: 14 }}>
+      <h2 className="title-lg">연락처와 주소</h2>
+      <div className="row-2" style={{ marginTop: 14 }}>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <span className="label">이름<span className="req">*</span></span>
+          <div className="input">김손길</div>
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <span className="label">연락처<span className="req">*</span></span>
+          <div className="input">010-1234-5678</div>
+        </div>
+      </div>
+      <div className="field" style={{ marginTop: 16 }}>
+        <span className="label">주소<span className="req">*</span></span>
+        <div className="input is-focus">
+          서울 강남구 테헤란로 120<span className="caret animate-caret" />
+        </div>
+      </div>
+      <div className="field">
+        <span className="label">상세 주소 (선택)</span>
+        <div className="input" style={{ color: "var(--ink-soft)" }}>302동 1104호</div>
+      </div>
+      <div className="field" style={{ marginBottom: 0 }}>
+        <span className="label">요청사항 (선택)</span>
+        <div className="input" style={{ color: "var(--ink-soft)", minHeight: 62 }}>
+          반려동물이 있어요. 베란다도 신경 써주세요.
+        </div>
+      </div>
     </div>
   );
 }
 
-/* 5) 예약 완료 */
+/* STEP 5 — 예약금 결제 */
+function PayStep() {
+  return (
+    <div style={{ marginTop: 14 }}>
+      <h2 className="title-lg">예약금 결제</h2>
+      <div className="card card-pad" style={{ marginTop: 14 }}>
+        <div className="flex between"><span className="muted small">서비스</span><b>🏠 가정 정기청소</b></div>
+        <div className="flex between mt-8"><span className="muted small">방문일</span><b>2026-07-19 13:00</b></div>
+        <div className="flex between mt-8"><span className="muted small">담당 업체</span><b>청소학개론</b></div>
+      </div>
+
+      <div className="card card-pad" style={{ marginTop: 12 }}>
+        <p className="small" style={{ fontWeight: 700, marginBottom: 8 }}>예상 견적 상세</p>
+        <div className="flex between"><span className="muted small">기본 견적 (24평)</span><b className="small">96,000원</b></div>
+        <div className="flex between mt-8"><span className="muted small">주거유형 (아파트)</span><b className="small">×1</b></div>
+        <hr className="hr" />
+        <div className="flex between center">
+          <span style={{ fontWeight: 700 }}>최종 예상 견적</span>
+          <span className="price" style={{ fontSize: "1.25rem" }}>96,000원</span>
+        </div>
+        <p className="tiny muted" style={{ marginTop: 8 }}>최종 금액은 현장 확인 후 확정될 수 있어요.</p>
+      </div>
+
+      <div
+        className="card card-pad"
+        style={{ marginTop: 12, background: "var(--brand-50)", border: "1px solid var(--brand-100)" }}
+      >
+        <div className="flex between center">
+          <span style={{ fontWeight: 700 }}>지금 결제 (예약금·견적의 7%)</span>
+          <span className="price" style={{ fontSize: "1.3rem" }}>6,720원</span>
+        </div>
+        <p className="tiny muted" style={{ marginTop: 6 }}>
+          잔금 89,280원은 청소 완료 후 현장에서 파트너에게 결제해요.
+        </p>
+      </div>
+
+      <div className="btn-brand" style={{ marginTop: 16 }}>6,720원 결제하고 예약 확정</div>
+    </div>
+  );
+}
+
+/* 완료 */
 function DoneScreen() {
   return (
-    <div className="flex flex-col items-center pt-6 text-center">
-      <div className="animate-pop grid h-16 w-16 place-items-center rounded-full bg-mint-soft text-3xl">
-        🎉
-      </div>
-      <p className="mt-4 text-sm font-black text-ink">예약 신청이 접수됐어요!</p>
-      <p className="mt-1.5 text-[10px] leading-relaxed text-ink-soft">
-        입금이 확인되면 담당 업체를 배정하고
-        <br />
-        문자로 알려드릴게요.
-      </p>
-      <div className="mt-4 w-full rounded-2xl bg-cream p-3 text-left text-[10px]">
-        <div className="flex justify-between">
-          <span className="text-ink-soft">예약 번호</span>
-          <span className="font-black text-ink">SG-240719</span>
+    <div className="pad center-text">
+      <div className="card lg card-pad animate-pop" style={{ marginTop: 20 }}>
+        <div
+          className="tile"
+          style={{ margin: "0 auto", background: "var(--emerald-50)", height: 64, width: 64, fontSize: "2rem" }}
+        >
+          ✅
         </div>
-        <div className="mt-1 flex justify-between border-t border-line pt-1">
-          <span className="text-ink-soft">예약금</span>
-          <span className="font-black text-brand">21,000원</span>
+        <h1 className="title-xl">예약이 확정됐어요!</h1>
+        <p className="sub small">
+          예약금 결제가 완료됐어요. 방문 하루 전 담당 업체가 다시 안내드릴게요.
+        </p>
+        <div className="notice" style={{ marginTop: 18, textAlign: "left" }}>
+          <div className="flex between"><span className="muted small">예약번호</span><b>SG-2071</b></div>
+          <div className="flex between mt-8"><span className="muted small">서비스</span><b>🏠 가정 정기청소</b></div>
+          <div className="flex between mt-8"><span className="muted small">방문일</span><b>2026-07-19 13:00</b></div>
+          <div className="flex between mt-8"><span className="muted small">담당 업체</span><b>청소학개론</b></div>
+          <div className="flex between mt-8"><span className="muted small">결제한 예약금 (견적의 7%)</span><b className="price">6,720원</b></div>
         </div>
+        <div className="btn-brand" style={{ marginTop: 18 }}>내 예약 보기 →</div>
       </div>
     </div>
   );
