@@ -129,9 +129,15 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  // 관리자가 아니면 고객 셀프서비스(취소·일정 변경) 경로로 처리.
-  if (!isAdminEmail(user.email)) {
+  // 셀프서비스(취소·일정 변경)는 본인 예약이면 관리자·고객 누구나 처리.
+  // (관리자 계정도 자기 예약을 /reservations 에서 바꿀 수 있어야 하므로 역할보다 먼저 분기.)
+  if (body.action === "cancel" || body.action === "reschedule") {
     return handleCustomerPatch(user.id, id, body);
+  }
+
+  // 이하 관리자 전용 (상태 변경·업체 배정·협의가·입금 확인).
+  if (!isAdminEmail(user.email)) {
+    return NextResponse.json({ error: "권한이 없어요." }, { status: 403 });
   }
 
   // 상태 (선택)
