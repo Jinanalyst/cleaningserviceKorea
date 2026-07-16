@@ -127,6 +127,33 @@ export default async function PartnerDetailPage({
         </div>
       </section>
 
+      {/* 연락처 */}
+      {(partner.phone || partner.linkedin) && (
+        <section className="mt-8 rounded-2xl border border-line bg-white p-5">
+          <h2 className="text-base font-black text-ink">연락처</h2>
+          <div className="mt-3 flex flex-col gap-2 text-sm">
+            {partner.phone && (
+              <a
+                href={`tel:${partner.phone.replace(/-/g, "")}`}
+                className="inline-flex w-fit items-center gap-2 font-bold text-brand-700 hover:text-brand"
+              >
+                📞 {partner.phone}
+              </a>
+            )}
+            {partner.linkedin && (
+              <a
+                href={partner.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-fit items-center gap-2 font-bold text-brand-700 hover:text-brand"
+              >
+                🔗 링크드인 프로필 보기
+              </a>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* 후기 — 스크롤 가능 + 라이브 갱신 */}
       <PartnerReviews partnerId={partner.id} initialReviews={reviews} />
 

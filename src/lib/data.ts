@@ -387,6 +387,8 @@ export type Partner = {
   photos: string[]; // 대표 작업 사진 라벨 (플레이스홀더)
   accent: string; // 아바타 배경색 (tailwind 클래스)
   intro: string;
+  phone?: string; // 직접 연락처 (선택)
+  linkedin?: string; // 링크드인 프로필 URL (선택)
 };
 
 export const PARTNERS: Partner[] = [
@@ -457,6 +459,26 @@ export const PARTNERS: Partner[] = [
     accent: "bg-amber-100 text-amber-600",
     intro:
       "영업에 방해되지 않게 이른 아침·늦은 밤 시간대 청소를 전문으로 해요. 세금계산서 발행 가능.",
+  },
+  {
+    id: "gaeron",
+    name: "청소학개론",
+    tagline: "1~2인이 직접 발로 뛰는 사무실 청소",
+    rating: 0,
+    reviews: 0,
+    jobs: 0,
+    since: 2024,
+    specialties: ["사무실·상가청소"],
+    region: "서울 강남 · 성남 분당",
+    regions: ["서울 강남구", "서울 서초구", "성남시 분당구"],
+    verifications: ["신원 확인"],
+    photos: ["사무실 바닥 청소", "탕비실·화장실 청소", "유리창·파티션 세척", "공용부 정기관리"],
+    accent: "bg-violet-100 text-violet-600",
+    intro:
+      "1~2인 소규모로 직접 발로 뛰며 청소하는 게 자부심이에요. 서울 강남과 성남 분당 지역 사무실·상가를 남의 공간이 아니라 내 공간처럼 구석구석 정성껏 관리해 드립니다.",
+    phone: "010-3210-3748",
+    linkedin:
+      "https://www.linkedin.com/in/%EC%B2%AD%EC%86%8C%EB%B6%80-%ED%96%89%EB%B3%B5%ED%95%9C-94188a3ab/",
   },
 ];
 
