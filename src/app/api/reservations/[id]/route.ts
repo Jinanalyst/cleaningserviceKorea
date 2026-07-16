@@ -23,10 +23,12 @@ const CUSTOMER_EDITABLE: ReservationStatus[] = ["pending", "confirmed"];
 async function handleCustomerPatch(
   userId: string,
   id: string,
-  body: { action?: string; date?: string; timeSlot?: string }
+  body: { action?: string; date?: string; timeSlot?: string },
+  isAdmin = false
 ) {
   const target = await readById(id);
-  if (!target || target.userId !== userId) {
+  // 고객은 본인 예약만, 관리자는 모든 예약을 취소·시간변경할 수 있다.
+  if (!target || (!isAdmin && target.userId !== userId)) {
     return NextResponse.json({ error: "예약을 찾을 수 없습니다." }, { status: 404 });
   }
 
@@ -129,10 +131,10 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  // 셀프서비스(취소·일정 변경)는 본인 예약이면 관리자·고객 누구나 처리.
-  // (관리자 계정도 자기 예약을 /reservations 에서 바꿀 수 있어야 하므로 역할보다 먼저 분기.)
+  // 셀프서비스(취소·일정 변경): 고객은 본인 예약, 관리자는 모든 예약.
+  // (역할보다 먼저 분기 — 관리자 계정도 /reservations·/admin 에서 시간변경 가능.)
   if (body.action === "cancel" || body.action === "reschedule") {
-    return handleCustomerPatch(user.id, id, body);
+    return handleCustomerPatch(user.id, id, body, isAdminEmail(user.email));
   }
 
   // 이하 관리자 전용 (상태 변경·업체 배정·협의가·입금 확인).

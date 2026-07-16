@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import MessageThread from "@/components/MessageThread";
+import Calendar, { type DateStatus } from "@/components/Calendar";
 import {
   STATUS_META,
   PARTNERS,
+  TIME_SLOTS,
   DEPOSIT_ACCOUNT,
   serviceById,
   formatKRW,
@@ -14,6 +16,8 @@ import {
   type ReservationStatus,
   type PropertyInfo,
 } from "@/lib/data";
+
+type BookedSlot = { date: string; timeSlot: string; partnerId: string };
 
 type Reservation = {
   id: string;
@@ -69,6 +73,20 @@ export default function AdminPage() {
     Record<string, { depositor: string; memo: string }>
   >({});
   const [openId, setOpenId] = useState<string | null>(null);
+  // 예약 현황(시간 변경 시 마감 슬롯 표시용) · 시간 변경 중인 예약
+  const [booked, setBooked] = useState<BookedSlot[]>([]);
+  const [reschedId, setReschedId] = useState<string | null>(null);
+  const [newDate, setNewDate] = useState<string | null>(null);
+  const [newTime, setNewTime] = useState<string>("");
+  const [reschedErr, setReschedErr] = useState<string | null>(null);
+
+  // 시간 변경 가능한 최소 날짜 = 오늘 + 3일 (예약 화면과 동일 규칙)
+  const minDate = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3);
+    return d;
+  }, []);
 
   // 배정 가능한 업체 = 기본 시드 파트너 + 심사 승인된 신규 파트너
   const partnerOptions: AssignablePartner[] = useMemo(
@@ -110,8 +128,17 @@ export default function AdminPage() {
     }
   }
 
+  // 예약 현황(마감 슬롯) 새로고침
+  function loadAvailability() {
+    fetch("/api/availability", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setBooked(d?.slots ?? []))
+      .catch(() => setBooked([]));
+  }
+
   useEffect(() => {
     load();
+    loadAvailability();
     // 승인된 신규 파트너 목록 (배정 드롭다운용)
     fetch("/api/partners", { cache: "no-store" })
       .then((r) => r.json())
@@ -125,6 +152,63 @@ export default function AdminPage() {
       )
       .catch(() => setApproved([]));
   }, []);
+
+  // 특정 예약(담당 업체) 기준으로 해당 날짜·시간이 이미 잡혔는지 (자기 슬롯 제외)
+  function slotTaken(r: Reservation, date: string | null, t: string): boolean {
+    if (!date) return false;
+    if (date === r.date && t === r.timeSlot) return false;
+    return booked.some(
+      (s) => s.partnerId === r.partnerId && s.date === date && s.timeSlot === t
+    );
+  }
+  function dateStatusFor(r: Reservation, date: string): DateStatus {
+    const taken = booked.filter(
+      (s) =>
+        s.partnerId === r.partnerId &&
+        s.date === date &&
+        !(s.date === r.date && s.timeSlot === r.timeSlot)
+    ).length;
+    if (taken >= TIME_SLOTS.length) return "full";
+    return taken > 0 ? "some" : "open";
+  }
+
+  // 시간 변경 패널 열기/닫기
+  function openReschedule(r: Reservation) {
+    setReschedErr(null);
+    setReschedId(r.id);
+    setNewDate(r.date);
+    setNewTime(r.timeSlot);
+  }
+
+  // 시간 변경 실행 (관리자: 모든 예약 대상)
+  async function submitReschedule(r: Reservation) {
+    if (!newDate || !newTime) {
+      setReschedErr("변경할 날짜와 시간을 선택해 주세요.");
+      return;
+    }
+    if (newDate === r.date && newTime === r.timeSlot) {
+      setReschedId(null);
+      return;
+    }
+    setReschedErr(null);
+    setUpdating(r.id);
+    try {
+      const res = await fetch(`/api/reservations/${r.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reschedule", date: newDate, timeSlot: newTime }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "시간 변경에 실패했어요.");
+      setRows((prev) => prev.map((x) => (x.id === r.id ? data.reservation : x)));
+      setReschedId(null);
+      loadAvailability();
+    } catch (e) {
+      setReschedErr(e instanceof Error ? e.message : "시간 변경에 실패했어요.");
+    } finally {
+      setUpdating(null);
+    }
+  }
 
   async function patchReservation(
     id: string,
@@ -368,6 +452,17 @@ export default function AdminPage() {
                       {STATUS_META[s].label}
                     </button>
                   ))}
+                  {(r.status === "pending" || r.status === "confirmed") && (
+                    <button
+                      onClick={() =>
+                        reschedId === r.id ? setReschedId(null) : openReschedule(r)
+                      }
+                      disabled={updating === r.id}
+                      className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700 ring-1 ring-sky-200 transition hover:bg-sky-100 disabled:opacity-40"
+                    >
+                      🕑 {reschedId === r.id ? "시간 변경 닫기" : "시간 변경"}
+                    </button>
+                  )}
                   <button
                     onClick={() => setOpenId(isOpen ? null : r.id)}
                     className="ml-auto rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-cream transition hover:opacity-90"
@@ -384,6 +479,65 @@ export default function AdminPage() {
                     </button>
                   )}
                 </div>
+
+                {/* 시간 변경 패널 (접수·업체확정 예약) */}
+                {reschedId === r.id && (
+                  <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50/50 p-3">
+                    <p className="text-xs font-bold text-ink">
+                      방문 시간 변경 · {partnerNameOf(r.partnerId)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-ink-soft">
+                      이미 예약된 시간은 선택할 수 없어요. (현재: {r.date} {r.timeSlot})
+                    </p>
+                    <div className="mt-2">
+                      <Calendar
+                        value={newDate}
+                        onChange={(d) => {
+                          setNewDate(d);
+                          if (slotTaken(r, d, newTime)) setNewTime("");
+                        }}
+                        minDate={minDate}
+                        dateStatus={(k) => dateStatusFor(r, k)}
+                      />
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {TIME_SLOTS.map((t) => {
+                        const sold = slotTaken(r, newDate, t);
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            disabled={sold}
+                            onClick={() => !sold && setNewTime(t)}
+                            className={[
+                              "rounded-lg border px-3.5 py-2 text-xs font-bold transition",
+                              newTime === t
+                                ? "border-brand bg-brand text-white"
+                                : sold
+                                  ? "cursor-not-allowed border-line bg-cream text-ink-soft/40 line-through"
+                                  : "border-line bg-white text-ink hover:border-brand-200",
+                            ].join(" ")}
+                          >
+                            {t}
+                            {sold ? " 마감" : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {reschedErr && (
+                      <p className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600">
+                        {reschedErr}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => submitReschedule(r)}
+                      disabled={updating === r.id || !newDate || !newTime}
+                      className="mt-2 w-full rounded-full bg-brand py-2.5 text-xs font-black text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {updating === r.id ? "변경 중…" : "이 시간으로 변경"}
+                    </button>
+                  </div>
+                )}
 
                 {/* 예약금(수수료 7%) 입금 확인 — 항상 표시 */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-cream px-3 py-2 text-sm">
