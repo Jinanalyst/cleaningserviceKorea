@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 
 /*
   히어로 우측 — 손길 앱의 실제 예약 화면(songil-app/src/screens/Book.tsx)을
@@ -11,27 +12,40 @@ import { useEffect, useState } from "react";
 
 const STEPS = ["서비스", "공간 정보", "날짜·업체", "정보 입력", "예약금 결제"];
 const SCREEN_COUNT = STEPS.length + 1; // + 완료
-const DWELL = 3200;
+const DWELL = 4200; // 각 화면 유지 시간(자동 스크롤 포함)
 
 // 375px 논리폭을 폰 프레임 안쪽 폭(280px)에 맞춰 축소
 const LOGICAL_W = 375;
 const FRAME_INNER_W = 280;
 const SCALE = FRAME_INNER_W / LOGICAL_W;
-const SCREEN_H = 560; // 폰 화면(뷰포트) 시각 높이
+const SCREEN_H = 580; // 폰 화면(뷰포트) 시각 높이
+const VIEW_LOGICAL_H = SCREEN_H / SCALE; // 뷰포트의 논리 높이
 
 export default function AppFlowMock() {
   const [step, setStep] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [reduced, setReduced] = useState(false);
 
   useEffect(() => {
     if (
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     ) {
-      return; // 모션 최소화 설정이면 첫 화면만 표시
+      setReduced(true);
+      return; // 모션 최소화 설정이면 첫 화면만 표시(자동 진행 없음)
     }
     const t = setInterval(() => setStep((s) => (s + 1) % SCREEN_COUNT), DWELL);
     return () => clearInterval(t);
   }, []);
+
+  // 화면 렌더 후 실제 높이를 재서 뷰포트보다 길면 그만큼 위로 스크롤(--ty)
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const h = el.offsetHeight; // 논리 높이(스케일 전)
+    const ty = Math.min(0, -(h - VIEW_LOGICAL_H) - 24);
+    el.style.setProperty("--ty", `${ty}px`);
+  }, [step]);
 
   const done = step >= STEPS.length;
 
@@ -50,48 +64,57 @@ export default function AppFlowMock() {
           {/* 노치 */}
           <div className="absolute left-1/2 top-0 z-20 h-4 w-24 -translate-x-1/2 rounded-b-2xl bg-ink" />
 
-          {/* 스케일된 앱 화면 (실제 앱 마크업) */}
-          <div
-            key={step}
-            className="appmock animate-screen absolute left-0 top-0"
-            style={{
-              width: LOGICAL_W,
-              transform: `scale(${SCALE})`,
-              transformOrigin: "top left",
-            }}
-          >
-            {/* 상태바 */}
-            <div className="mockstatus">
-              <span>9:41</span>
-              <span style={{ letterSpacing: "1px" }}>••• 📶 🔋</span>
-            </div>
-            {/* 앱바 */}
-            <div className="appbar">
-              <span className="back">‹</span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-mark.png" alt="" aria-hidden="true" className="logo" />
-              <span className="title">청소 예약</span>
-            </div>
+          {/* 스케일된 앱 화면 (실제 앱 마크업) — 뷰포트보다 길면 자동 스크롤 */}
+          <div key={step} className="appmock-fade absolute left-0 top-0">
+            <div
+              ref={contentRef}
+              className={`appmock${reduced ? "" : " appmock-scroll"}`}
+              style={
+                {
+                  width: LOGICAL_W,
+                  transformOrigin: "top left",
+                  transform: `scale(${SCALE})`,
+                  "--s": String(SCALE),
+                  "--dwell": `${DWELL}ms`,
+                } as CSSProperties
+              }
+            >
+              {/* 상태바 */}
+              <div className="mockstatus">
+                <span>9:41</span>
+                <span style={{ letterSpacing: "1px" }}>••• 📶 🔋</span>
+              </div>
+              {/* 앱바 */}
+              <div className="appbar">
+                <span className="back">‹</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo-mark.png" alt="" aria-hidden="true" className="logo" />
+                <span className="title">청소 예약</span>
+              </div>
 
-            {done ? (
-              <DoneScreen />
-            ) : (
-              <>
-                {/* 스텝바 */}
-                <div className="stepbar">
-                  {STEPS.map((_, i) => (
-                    <span key={i} className={`seg${i <= step ? " on" : ""}`} />
-                  ))}
-                </div>
-                <div className="pad">
-                  <p className="eyebrow">
-                    STEP {step + 1} / {STEPS.length} · {STEPS[step]}
-                  </p>
-                  <Screen step={step} />
-                </div>
-              </>
-            )}
+              {done ? (
+                <DoneScreen />
+              ) : (
+                <>
+                  {/* 스텝바 */}
+                  <div className="stepbar">
+                    {STEPS.map((_, i) => (
+                      <span key={i} className={`seg${i <= step ? " on" : ""}`} />
+                    ))}
+                  </div>
+                  <div className="pad">
+                    <p className="eyebrow">
+                      STEP {step + 1} / {STEPS.length} · {STEPS[step]}
+                    </p>
+                    <Screen step={step} />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
+
+          {/* 상·하단 페이드로 스크롤을 자연스럽게 */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-cream to-transparent" />
         </div>
       </div>
 

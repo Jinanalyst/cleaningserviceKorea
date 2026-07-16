@@ -223,6 +223,41 @@ body {
   font-family: var(--font-sans);
   text-align: left;
 }
+/* 각 화면이 뷰포트보다 길면 위→아래로 자동 스크롤(화면 녹화처럼) */
+@keyframes appScroll {
+  0%,
+  16% {
+    transform: scale(var(--s)) translateY(0);
+  }
+  84%,
+  100% {
+    transform: scale(var(--s)) translateY(var(--ty, 0px));
+  }
+}
+.appmock-scroll {
+  animation: appScroll var(--dwell, 4000ms) cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+@keyframes appFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.appmock-fade {
+  animation: appFade 0.4s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .appmock-scroll {
+    animation: none;
+    transform: scale(var(--s));
+  }
+  .appmock-fade {
+    animation: none;
+  }
+}
+
 .appmock button {
   font-family: inherit;
   cursor: default;
