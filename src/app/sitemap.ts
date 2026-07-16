@@ -8,7 +8,6 @@ const PUBLIC_PATHS = [
   "/consult",
   "/reservations",
   "/partners/apply",
-  "/app",
   "/service-info",
   "/payment-info",
   "/refund-policy",

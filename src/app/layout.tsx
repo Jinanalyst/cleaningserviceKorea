@@ -72,9 +72,6 @@ function Header() {
           <Link href="/#service-info" className="hover:text-ink transition-colors">
             서비스 안내
           </Link>
-          <Link href="/app" className="hover:text-ink transition-colors">
-            앱 다운로드
-          </Link>
           <Link href="/consult" className="hover:text-ink transition-colors">
             견적 상담
           </Link>
@@ -134,9 +131,6 @@ function Footer() {
             </li>
             <li>
               <Link href="/affiliate" className="hover:text-brand">추천·제휴 파트너</Link>
-            </li>
-            <li>
-              <Link href="/app" className="hover:text-brand">모바일 앱 다운로드</Link>
             </li>
           </ul>
         </div>

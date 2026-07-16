@@ -87,9 +87,6 @@ export default async function Home() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-cream px-3 py-1 text-xs font-medium text-ink-soft">
               <span className="h-1.5 w-1.5 rounded-full bg-mint" /> Google Play 출시 준비 중
             </span>
-            <Link href="/app" className="text-xs font-bold text-brand hover:text-brand-600">
-              앱 자세히 보기 →
-            </Link>
           </div>
         </div>
         <p className="mt-2 px-2 text-center text-xs leading-relaxed text-ink-soft/80 sm:text-left">
